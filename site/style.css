@@ -135,7 +135,25 @@ main { padding-top: 32px; }
 .counter span.off { color: rgba(46, 204, 160, 0.25); }
 .per-release { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
 
-/* visitor map: the MapMyVisitors globe takes the width of this box */
+/* questions and answers */
+.faq { border-bottom: 1px solid var(--line); }
+.faq:last-child { border-bottom: 0; }
+.faq summary {
+  padding: 10px 0 10px 22px; position: relative;
+  cursor: pointer; list-style: none; font-weight: 600;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::before {
+  content: ""; position: absolute; left: 2px; top: 19px;
+  border: 5px solid transparent; border-left: 7px solid var(--accent);
+  transition: transform 0.15s;
+  transform-origin: 3px 5px;
+}
+.faq[open] summary::before { transform: rotate(90deg); }
+.faq summary:hover { color: var(--accent); }
+.faq p { margin: 0 0 12px 22px; color: var(--muted); }
+
+/* visitor map: the MapMyVisitors map takes the width of this box */
 .map-slot { margin: 0 auto; }
 .map-slot > a { margin: 0 auto; max-width: 100%; }
 

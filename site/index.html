@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://teoclmr.github.io/busmaster-ng/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -129,6 +129,48 @@
     <p><a href="https://github.com/teoCLMR/busmaster-ng#what-is-different-from-busmaster-322">Full list</a></p>
   </section>
 
+  <section class="box" id="faq">
+    <h2>Frequently asked questions</h2>
+    <details class="faq">
+      <summary>Does BUSMASTER run on Windows 10 and Windows 11?</summary>
+      <p>BUSMASTER-NG does: it runs on Windows 10 and 11 (32 or 64 bit) and on Windows 7 SP1. Take the installer,
+        or a portable zip if you prefer no setup.</p>
+    </details>
+    <details class="faq">
+      <summary>BUSMASTER 3.2.2 freezes on the splash screen. What can I do?</summary>
+      <p>BUSMASTER 3.2.2 waits for its simulation engine, which is registered only when it is installed with
+        administrator rights. BUSMASTER-NG registers it for the current user when needed, without administrator
+        rights, and if it still cannot start, a message says why instead of a hang. A missing Microsoft Visual
+        C++ 2013 runtime is also reported, with a link to the Microsoft download page.</p>
+    </details>
+    <details class="faq">
+      <summary>How do I load a DBC file?</summary>
+      <p>In BUSMASTER-NG choose <em>CAN &rarr; Load DBC</em> (Ctrl+Shift+M): the DBC files are converted and
+        associated directly, several at once. The DBC &harr; DBF converters of the original BUSMASTER are fixed too.</p>
+    </details>
+    <details class="faq">
+      <summary>Which CAN and LIN interfaces are supported?</summary>
+      <p>PEAK, Vector XL, Kvaser, ETAS BOA, IXXAT VCI, MHS, VScom, Intrepid neoVI, NSI, i-VIEW and ISOLAR-EVE, like
+        the original BUSMASTER. Install the driver of your interface from its manufacturer. The Simulation driver
+        works without hardware.</p>
+    </details>
+    <details class="faq">
+      <summary>Can I install it next to BUSMASTER 3.2.2?</summary>
+      <p>Yes. BUSMASTER-NG keeps its settings apart from earlier versions, and configurations of BUSMASTER 3.2.x
+        open unchanged.</p>
+    </details>
+    <details class="faq">
+      <summary>Is it free, also for use at work?</summary>
+      <p>Yes. BUSMASTER-NG is free and open source under the GNU LGPL v3, like the original: you can use it at
+        home or in a company at no cost. If you distribute a modified version, share your changes under the same
+        license.</p>
+    </details>
+    <details class="faq">
+      <summary>Does it run on Linux or macOS?</summary>
+      <p>No, BUSMASTER-NG is a Windows program (MFC). There is no Linux or macOS version.</p>
+    </details>
+  </section>
+
   <section class="box">
     <h2>About the project</h2>
     <p>BUSMASTER was conceived, designed and built by Robert Bosch Engineering and Business Solutions (RBEI), and became
@@ -160,6 +202,6 @@
     <a href="https://github.com/teoCLMR/busmaster-ng#are-the-files-signed">Are the files signed?</a></p>
 </footer>
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

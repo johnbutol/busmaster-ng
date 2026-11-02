@@ -106,6 +106,23 @@
     showPortable(rel);
   }
 
+  // FAQPage structured data for search engines, built from the questions on the page so the two never differ
+  function addFaqData() {
+    var items = [].map.call(document.querySelectorAll("#faq details"), function (d) {
+      return {
+        "@type": "Question", name: d.querySelector("summary").textContent.trim(),
+        acceptedAnswer: { "@type": "Answer", text: d.querySelector("p").textContent.replace(/\s+/g, " ").trim() }
+      };
+    });
+    if (!items.length) return;
+    var s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: items });
+    document.head.appendChild(s);
+  }
+
+  addFaqData();
+
   load().then(function (releases) {
     var total = 0;
     releases.forEach(function (rel) {
