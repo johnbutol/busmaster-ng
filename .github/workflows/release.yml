@@ -266,9 +266,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # the CHANGELOG section "## X.Y.Z ..." up to the next "## "
+          # the CHANGELOG section "## X.Y.Z ..." up to the next "## "; its heading without the date, with the
+          # codename (3.4.2 "Overdrive"), is the title of the release
           $notes = ((Get-Content CHANGELOG.md -Raw) -split "(?m)^## ") | Where-Object { $_ -match "^$([regex]::Escape($env:VERSION))\b" } | Select-Object -First 1
-          if ($null -eq $notes) { $notes = "See CHANGELOG.md" } else { $notes = ($notes -split "`n", 2)[1].Trim() }
+          $title = "BUSMASTER-NG $env:VERSION"
+          if ($null -eq $notes) { $notes = "See CHANGELOG.md" } else {
+            $parts = $notes -split "`n", 2
+            $title = "BUSMASTER-NG " + ($parts[0] -replace "\s+-\s+\d{4}-\d{2}-\d{2}\s*$", "").Trim()
+            $notes = $parts[1].Trim()
+          }
           Set-Content "$env:RUNNER_TEMP\notes.md" $notes -Encoding utf8
           $files = Get-ChildItem release-out -File | Where-Object { $_.Name -like "*.zip" -or $_.Name -like "*_setup.exe" } | ForEach-Object FullName
-          gh release create "${{ github.ref_name }}" --draft --verify-tag --title "BUSMASTER-NG $env:VERSION" --notes-file "$env:RUNNER_TEMP\notes.md" @files
+          gh release create "${{ github.ref_name }}" --draft --verify-tag --title $title --notes-file "$env:RUNNER_TEMP\notes.md" @files
