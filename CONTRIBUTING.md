@@ -6,6 +6,9 @@ improvements are all welcome. *(Italiano: vedi in fondo.)*
 BUSMASTER-NG is a community fork maintained by **bigt92** (GitHub: **teoCLMR**) in his spare time, so answers
 may take a while. It is **not affiliated with ETAS GmbH or Robert Bosch GmbH**.
 
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Security problems are reported privately,
+as described in the [security policy](SECURITY.md).
+
 ## Reporting a problem
 
 Open an issue and use the *Bug report* form. The more of these you can tell us, the faster it gets fixed:
