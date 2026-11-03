@@ -28,6 +28,7 @@
 #include "include/XMLDefines.h"
 #include "MainFrm.h"            // Main frame class defintion file
 #include "DbcImport.h"          // BUSMASTER-NG: loading of DBC databases
+#include "UpdateCheck.h"        // BUSMASTER-NG: Help > Check for Updates
 #include "Properties.h"         // Properties dialog class definition file
 
 // Special file dialog class to
@@ -248,6 +249,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWndEx)
     ON_COMMAND(IDM_FILTER_MESSAGE_SELECTMESSAGES, OnSelectMessage)
     ON_COMMAND(IDM_CONFIGURE_FILTER_LIN, OnLINFilter)
     ON_COMMAND(IDM_APP_ABOUT, OnAboutApplication)
+    ON_COMMAND(ID_HELP_CHECKFORUPDATES, OnCheckForUpdates)
     ON_COMMAND(IDM_LOG_ON_OFF, OnLogEnable)
     ON_COMMAND(IDM_LOG_LIN_ON_OFF, OnLog_LIN_Enable)
     ON_UPDATE_COMMAND_UI(IDM_LOG_LIN_ON_OFF, OnUpdateLogOnOff_LIN)
@@ -2809,6 +2811,12 @@ void CMainFrame::OnAboutApplication()
 {
     theApp.OnAppAbout();
 
+}
+
+/* BUSMASTER-NG: Help > Check for Updates */
+void CMainFrame::OnCheckForUpdates()
+{
+    vCheckForUpdates(this);
 }
 
 static void vPopulateMsgEntryFromDB(SMSGENTRY*& psMsgEntry,

@@ -8,6 +8,11 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**Help**
+- *Help → Check for Updates* asks GitHub for the latest release and, when it is newer than the running version,
+  opens its download page in the browser. Nothing is downloaded or installed by BUSMASTER-NG, and GitHub is
+  contacted only when you click the button.
+
 **Package**
 - Every executable and DLL built from the BUSMASTER-NG sources says product *BUSMASTER-NG* and the version of the
   release in its file properties (*Properties → Details*); many still had the placeholders of the original project

@@ -338,6 +338,7 @@ copy ".\Res\Splsh16.bmp" "$(SolutionDir)\bin\$(OutDir)Splsh16.bmp"
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="DbcImport.cpp" />
+    <ClCompile Include="UpdateCheck.cpp" />
     <ClCompile Include="Application.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -966,6 +967,7 @@ copy ".\Res\Splsh16.bmp" "$(SolutionDir)\bin\$(OutDir)Splsh16.bmp"
   <ItemGroup>
     <ClInclude Include="AboutDlg.h" />
     <ClInclude Include="DbcImport.h" />
+    <ClInclude Include="UpdateCheck.h" />
     <ClInclude Include="AppServices_Impl.h" />
     <ClInclude Include="BaseBusStatisticCAN.h" />
     <ClInclude Include="BaseBusStatisticLIN.h" />

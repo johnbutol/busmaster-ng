@@ -1291,6 +1291,7 @@ BEGIN
         MENUITEM "&Help Topics\tF1",            ID_HELP_FINDER
         MENUITEM "&What's This?",               ID_CONTEXT_HELP
         MENUITEM SEPARATOR
+        MENUITEM "Check for &Updates...",       ID_HELP_CHECKFORUPDATES
         MENUITEM "&About BUSMASTER-NG...",         IDM_APP_ABOUT
     END
 END
@@ -1489,6 +1490,7 @@ END
 STRINGTABLE
 BEGIN
     ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
+    ID_HELP_CHECKFORUPDATES "Check on GitHub whether a newer BUSMASTER-NG is available\nCheck for Updates"
     ID_APP_EXIT             "Close Application\nExit"
     ID_HELP_INDEX           "Opens Help\nHelp Topics"
     ID_HELP_FINDER          "List Help topics\nHelp Topics"

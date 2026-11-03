@@ -1198,6 +1198,7 @@
 #define ID_RIBBON_HIDE                  40105
 #define ID_ACCELERATOR40109             40109
 #define ID_BUTTON_TOGGLERIBBON          40111
+#define ID_HELP_CHECKFORUPDATES         40114
 #define IDS_INVALID_DB_PROMPT           61447
 #define IDC_COMB_TOOLBAR                61448
 #define ID_ACTIVE_DATABASE_NAME         61448
@@ -1256,7 +1257,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        149
-#define _APS_NEXT_COMMAND_VALUE         40114
+#define _APS_NEXT_COMMAND_VALUE         40115
 #define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           122
 #endif

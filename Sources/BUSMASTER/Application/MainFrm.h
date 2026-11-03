@@ -380,6 +380,7 @@ protected:
     afx_msg void OnSelectMessage();
     afx_msg void OnLINFilter();
     afx_msg void OnAboutApplication();
+    afx_msg void OnCheckForUpdates();
     afx_msg void OnButtonSignalWatchButton();
     afx_msg void OnButtonSignalWatchButton_LIN();
 
