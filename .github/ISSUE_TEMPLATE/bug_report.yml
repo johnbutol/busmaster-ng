@@ -12,8 +12,8 @@ body:
     id: version
     attributes:
       label: BUSMASTER-NG version
-      description: "Help -> About, for example Ver 3.4.2. Say which package you use: installer, Windows 10 / 11 zip or Windows 7 zip."
-      placeholder: "Ver 3.4.2, installer"
+      description: "Help -> About, for example Ver 3.5.0. Say which package you use: installer, Windows 10 / 11 zip or Windows 7 zip."
+      placeholder: "Ver 3.5.0, installer"
     validations:
       required: true
   - type: input

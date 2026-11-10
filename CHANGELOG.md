@@ -8,6 +8,11 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+## 3.5.0 "Overdrive" - 2026-11-10
+
+Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that
+remembers the last speed, and a button to check for a new version.
+
 **Hardware selection** (ETAS BOA, IntrepidCS neoVI, i-VIEW, IXXAT, Kvaser, MHS, NSI, Vector and VScom drivers)
 - The columns of the lists scale with the display, so *Channel 1* is no longer cut off at high display scale.
 - The baud rate is a drop-down list of the usual speeds (10 kbit/s to 1 Mbit/s); another value can still be typed.
@@ -25,6 +30,10 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 - Every executable and DLL built from the BUSMASTER-NG sources says product *BUSMASTER-NG* and the version of the
   release in its file properties (*Properties → Details*); many still had the placeholders of the original project
   ("TODO: <Product name>", version 1.0.0.1) or no version at all. Needed for code signing.
+
+**Note on updating**
+- Window positions and the last configuration are stored per version, so after updating from 3.4.2 load your
+  configuration once (*File → Load*). The remembered baud rates are not part of it and are kept.
 
 ## 3.4.2 "Overdrive" - 2026-10-30
 
