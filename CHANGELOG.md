@@ -8,6 +8,14 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**Hardware selection** (ETAS BOA, IntrepidCS neoVI, i-VIEW, IXXAT, Kvaser, MHS, NSI, Vector and VScom drivers)
+- The columns of the lists scale with the display, so *Channel 1* is no longer cut off at high display scale.
+- The baud rate is a drop-down list of the usual speeds (10 kbit/s to 1 Mbit/s); another value can still be typed.
+  The last baud rate used with each interface is remembered for the next time, also when the configuration is not
+  saved: a channel that is still at the default 500 kbit/s starts with it, and so does a channel you add to the
+  list. Any other speed already set, for example by a loaded configuration, is kept.
+- Tested with the VScom driver; the dialog is shared by the other drivers, which were not tried one by one.
+
 **Help**
 - *Help → Check for Updates* asks GitHub for the latest release and, when it is newer than the running version,
   opens its download page in the browser. Nothing is downloaded or installed by BUSMASTER-NG, and GitHub is

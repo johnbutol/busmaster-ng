@@ -75,6 +75,98 @@ static char THIS_FILE[] = __FILE__;
 #define  defRESET                         0
 #define  defMIN_BRP                       1
 #define  defBAUD_RATE_MESSAGE         "Nearest Valid Baud Rate is %s kBit/s. Do You want to change it ?"
+
+// BUSMASTER-NG: baud rates of the drop-down list; any other value can still be typed
+static const char* const sg_apcBaudRates[] =
+{
+    "10000", "20000", "50000", "100000", "125000", "250000", "500000", "800000", "1000000"
+};
+#define  defDEFAULT_BAUD_RATE            "500000"
+
+// BUSMASTER-NG: the columns of the lists are given in pixels, the dialog follows the display scale: scale them too
+// (at 200% "Channel 1" did not fit in a column of 68 pixels)
+static int nScaleToDisplay(CWnd& omWnd, int nPixelsAt96Dpi)
+{
+    int nDpi = 96;
+    CDC* pDC = omWnd.GetDC();
+    if (nullptr != pDC)
+    {
+        nDpi = pDC->GetDeviceCaps(LOGPIXELSX);
+        omWnd.ReleaseDC(pDC);
+    }
+    return MulDiv(nPixelsAt96Dpi, nDpi, 96);
+}
+
+// BUSMASTER-NG: the last baud rate used with an interface is kept in the registry of the user, not in the
+// configuration file, so it is still there after a restart without saving the configuration. There is one value
+// for each driver (the name of the DLL this dialog is built into) and each channel.
+static CString omGetDriverName()
+{
+    HMODULE hModule = nullptr;
+    GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                      (LPCTSTR) &omGetDriverName, &hModule);
+    TCHAR acPath[MAX_PATH] = { 0 };
+    GetModuleFileName(hModule, acPath, MAX_PATH);
+    CString omName = acPath;
+    omName = omName.Mid(omName.ReverseFind('\\') + 1);
+    int nDot = omName.ReverseFind('.');
+    if (nDot > 0)
+    {
+        omName = omName.Left(nDot);
+    }
+    return omName;
+}
+
+static CString omLastBaudRateKey()
+{
+    return CString(_T("Software\\BUSMASTER-NG\\LastBaudRate\\")) + omGetDriverName();
+}
+
+static BOOL bIsValidBaudRate(const CString& omBaudRate)
+{
+    double dBaudRate = _tstof(omBaudRate);
+    return (dBaudRate >= 1000.0) && (dBaudRate <= 1000000.0);
+}
+
+// nChannel starts from 1; empty when nothing valid was saved
+static CString omReadLastBaudRate(int nChannel)
+{
+    CString omBaudRate;
+    HKEY hKey = nullptr;
+    if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CURRENT_USER, omLastBaudRateKey(), 0, KEY_READ, &hKey))
+    {
+        CString omName;
+        omName.Format(_T("Channel%d"), nChannel);
+        TCHAR acValue[32] = { 0 };
+        DWORD dwType = 0;
+        DWORD dwSize = sizeof(acValue) - sizeof(TCHAR);
+        if ((ERROR_SUCCESS == RegQueryValueEx(hKey, omName, nullptr, &dwType, (LPBYTE) acValue, &dwSize))
+                && (REG_SZ == dwType))
+        {
+            omBaudRate = acValue;
+        }
+        RegCloseKey(hKey);
+    }
+    return bIsValidBaudRate(omBaudRate) ? omBaudRate : CString();
+}
+
+static void vWriteLastBaudRate(int nChannel, const CString& omBaudRate)
+{
+    if (!bIsValidBaudRate(omBaudRate))
+    {
+        return;
+    }
+    HKEY hKey = nullptr;
+    if (ERROR_SUCCESS == RegCreateKeyEx(HKEY_CURRENT_USER, omLastBaudRateKey(), 0, nullptr, REG_OPTION_NON_VOLATILE,
+                                        KEY_SET_VALUE, nullptr, &hKey, nullptr))
+    {
+        CString omName;
+        omName.Format(_T("Channel%d"), nChannel);
+        RegSetValueEx(hKey, omName, 0, REG_SZ, (const BYTE*) (LPCTSTR) omBaudRate,
+                      (omBaudRate.GetLength() + 1) * sizeof(TCHAR));
+        RegCloseKey(hKey);
+    }
+}
 /*******************************************************************************
  Function Name  : CHardwareListingCAN
  Description    : Constructor for dialog box
@@ -147,7 +239,7 @@ void CHardwareListingCAN::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LSTC_HW_LIST, m_omHardwareList);
     DDX_Control(pDX, IDC_LSTC_SELECTED_HW_LIST, m_omSelectedHwList);
     DDX_Control(pDX, IDC_EDIT_FIRMWARE, m_omFirmware);
-	DDX_Control(pDX,IDC_CAN_EDIT_BAUD_RATE, m_omEditBaudRate);
+	DDX_Control(pDX, IDC_CAN_EDIT_BAUD_RATE, m_omComboBaudRate);
 	DDX_Text(pDX, IDC_CAN_EDIT_BAUD_RATE, m_omStrEditBaudRate);	
 	DDX_Control(pDX, IDC_EDIT_HS_BTR1, m_omEditBTR1);
 	DDX_Control(pDX, IDC_EDIT_HS_BTR0, m_omEditBTR0);
@@ -167,7 +259,8 @@ BEGIN_MESSAGE_MAP(CHardwareListingCAN, CDialog)
     //}}AFX_MSG_MAP
     ON_NOTIFY(NM_CLICK, IDC_LSTC_HW_LIST, OnNMClickLstcHwList)
     ON_NOTIFY(NM_CLICK, IDC_LSTC_SELECTED_HW_LIST, OnNMClickLstcSelectedHwList)
-	ON_EN_KILLFOCUS(IDC_CAN_EDIT_BAUD_RATE, CHardwareListingCAN::OnEnKillfocusCanEditBaudRate)	
+	ON_CBN_KILLFOCUS(IDC_CAN_EDIT_BAUD_RATE, CHardwareListingCAN::OnEnKillfocusCanEditBaudRate)
+	ON_CBN_SELENDOK(IDC_CAN_EDIT_BAUD_RATE, CHardwareListingCAN::OnCbnSelendokCanBaudRate)	
 	ON_BN_CLICKED(IDC_BUTTON_ADVANCE, CHardwareListingCAN::OnBnClickedButtonAdvance)
 	ON_NOTIFY(NM_DBLCLK, IDC_LSTC_HW_LIST, CHardwareListingCAN::OnNMDblclkLstcHwList)
 	ON_NOTIFY(NM_DBLCLK, IDC_LSTC_SELECTED_HW_LIST, CHardwareListingCAN::OnNMDblclkLstcSelectedHwList)
@@ -178,7 +271,8 @@ BOOL CHardwareListingCAN::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN &&
 		pMsg->wParam == VK_RETURN &&
-		GetFocus() == (CWnd*)&m_omEditBaudRate)
+		GetFocus() == (CWnd*)&m_omEditBaudRate &&
+		!m_omComboBaudRate.GetDroppedState())
 	{
 		CString omStrBaudRate = "";
 		m_omEditBaudRate.GetWindowText(omStrBaudRate);
@@ -273,15 +367,15 @@ void CHardwareListingCAN::vSetHardwareList(INTERFACE_HW* /*psHwIntr*/, int nSize
 	m_omHardwareList.InsertColumn(  defHARDWARE_COL,
 									_(defSTR_HARDWARE_COL_NAME) );
 	m_omHardwareList.SetColumnWidth( defHARDWARE_COL,
-										defSTR_LISTED_HARDWARE_COL_WIDTH );
+										nScaleToDisplay(m_omHardwareList, defSTR_LISTED_HARDWARE_COL_WIDTH) );
     m_omSelectedHwList.InsertColumn( defHARDWARE_COL,
                                      _(defSTR_HARDWARE_COL_NAME) );
     m_omSelectedHwList.SetColumnWidth( defHARDWARE_COL,
-                                       defSTR_HARDWARE_COL_WIDTH );
+                                       nScaleToDisplay(m_omSelectedHwList, defSTR_HARDWARE_COL_WIDTH) );
     m_omSelectedHwList.InsertColumn(defCHANNEL_COL,
                                      _(defSTR_CHANNEL_NAME) );
     m_omSelectedHwList.SetColumnWidth( defCHANNEL_COL,
-                                       defSTR_CHANNEL_COL_WIDTH );
+                                       nScaleToDisplay(m_omSelectedHwList, defSTR_CHANNEL_COL_WIDTH) );
 
     int nImageIndex = 0;
     CString omStrFormat("");
@@ -350,6 +444,18 @@ std::string CHardwareListingCAN::getProtocolChannelNameFormat(int nIndex)
 BOOL CHardwareListingCAN::OnInitDialog()
 {
     CDialog::OnInitDialog();
+
+    // BUSMASTER-NG: the baud rate is a drop-down list; the edit part of the combo box keeps the digits only input
+    for (const char* pcBaudRate : sg_apcBaudRates)
+    {
+        m_omComboBaudRate.AddString(pcBaudRate);
+    }
+    HWND hBaudRateEdit = ::FindWindowEx(m_omComboBaudRate.m_hWnd, nullptr, _T("Edit"), nullptr);
+    if (nullptr != hBaudRateEdit)
+    {
+        m_omEditBaudRate.SubclassWindow(hBaudRateEdit);
+    }
+
     // Update Hardware List with network details
     vSetHardwareList(m_psHwInterface, m_nSize);
 
@@ -374,6 +480,9 @@ BOOL CHardwareListingCAN::OnInitDialog()
 	}
 	vEnableBTRParams(FALSE);
 	
+    // BUSMASTER-NG: channels still at the default speed start with the last speed used with this interface
+    vApplyLastBaudRates();
+
     //Update the previously selected channel list
     vSetSelectedList();
    	m_nLastSelection = 0;
@@ -664,6 +773,8 @@ void CHardwareListingCAN::OnOK()
     {
         return;
     }
+    // BUSMASTER-NG: remember the baud rates used, for the next time the dialog is opened
+    vSaveLastBaudRates();
     // Call Parent class function to return from DoModal
     CDialog::OnOK();
 }
@@ -1057,6 +1168,95 @@ void CHardwareListingCAN::OnEnKillfocusCanEditBaudRate()
 		}
 	}	
 }
+// BUSMASTER-NG: a baud rate picked from the drop-down list is validated, and its BTR values calculated, like one typed
+// followed by Enter
+void CHardwareListingCAN::OnCbnSelendokCanBaudRate()
+{
+	int nSelection = m_omComboBaudRate.GetCurSel();
+	if ((CB_ERR == nSelection) || (-1 == m_nLastSelection) || (nullptr == m_pControllerDetails))
+	{
+		return;
+	}
+
+	// the text of the edit part is not updated yet at this point
+	CString omStrBaudRate;
+	m_omComboBaudRate.GetLBText(nSelection, omStrBaudRate);
+	m_omComboBaudRate.SetWindowText(omStrBaudRate);
+
+	DOUBLE dPreviousBaudRate = (FLOAT)_tstof(m_pControllerDetails[m_nLastSelection].m_omStrBaudrate.c_str());
+	if (dPreviousBaudRate != (FLOAT)_tstof(omStrBaudRate))
+	{
+		m_bOnEnterBaudRate = true;
+		vValidateBaudRate();
+		vCalculateConfigParams();
+		m_bOnEnterBaudRate = false;
+	}
+}
+
+// BUSMASTER-NG: sets the baud rate of a channel and the BTR values that go with it (as vCalculateConfigParams does
+// for the selected channel), without touching the controls
+void CHardwareListingCAN::vApplyBaudRate(int nItem, const CString& omBaudRate)
+{
+	double dBaudRate = _tstof(omBaudRate);
+	if ((nullptr == m_pControllerDetails) || (nItem < 0) || (nItem >= m_nMaxChannelAllowed) || (dBaudRate <= 0))
+	{
+		return;
+	}
+
+	sBTRTemp listBTRValues[defREG_VALUE_LIST_COUNT_MAX];
+	if (TRUE == CUtilFunctions::nCalculateCANChannelParameters(listBTRValues, dBaudRate, 16, 1))
+	{
+		unsigned char ucBtr0 = listBTRValues[0].uBTRReg0.ucBTR0;
+		unsigned char ucBtr1 = listBTRValues[0].uBTRReg1.ucBTR1;
+		CString omStrBTR0, omStrBTR1;
+		omStrBTR0.Format(_T("%02X"), ucBtr0);
+		omStrBTR1.Format(_T("%02X"), ucBtr1);
+
+		m_pControllerDetails[nItem].m_nBTR0BTR1 = static_cast <USHORT>(((ucBtr0 << 8) | ucBtr1) & 0xffff);
+		m_pControllerDetails[nItem].m_nItemUnderFocus = 0;
+		m_pControllerDetails[nItem].m_omStrBaudrate = (LPCTSTR) omBaudRate;
+		m_pControllerDetails[nItem].m_omStrBTR0 = (LPCTSTR) omStrBTR0;
+		m_pControllerDetails[nItem].m_omStrBTR1 = (LPCTSTR) omStrBTR1;
+		m_pControllerDetails[nItem].m_omStrClock = "16";
+		m_pControllerDetails[nItem].m_omStrSampling = "1";
+		m_pControllerDetails[nItem].m_omStrWarningLimit = "96";
+	}
+}
+
+// BUSMASTER-NG: when the dialog opens, the channels that are still at the default speed take the last speed used with
+// this interface. A channel with any other speed (for example from a loaded configuration) is left as it is.
+void CHardwareListingCAN::vApplyLastBaudRates()
+{
+	if (nullptr == m_pControllerDetails)
+	{
+		return;
+	}
+	for (int nIndex = 0; (nIndex < m_nSize) && (nIndex < m_nMaxChannelAllowed) && (m_pnSelList[nIndex] != -1); nIndex++)
+	{
+		if (m_pControllerDetails[nIndex].m_omStrBaudrate == defDEFAULT_BAUD_RATE)
+		{
+			CString omLastBaudRate = omReadLastBaudRate(nIndex + 1);
+			if (!omLastBaudRate.IsEmpty() && (omLastBaudRate != defDEFAULT_BAUD_RATE))
+			{
+				vApplyBaudRate(nIndex, omLastBaudRate);
+			}
+		}
+	}
+}
+
+// BUSMASTER-NG: called when the dialog is closed with OK
+void CHardwareListingCAN::vSaveLastBaudRates()
+{
+	if (nullptr == m_pControllerDetails)
+	{
+		return;
+	}
+	for (int nIndex = 0; (nIndex < m_nNoOfHwSelected) && (nIndex < m_nMaxChannelAllowed); nIndex++)
+	{
+		vWriteLastBaudRate(nIndex + 1, CString(m_pControllerDetails[nIndex].m_omStrBaudrate.c_str()));
+	}
+}
+
 void CHardwareListingCAN::vUpdateControllerDetails()
 { 
 	if(nullptr!=m_pControllerDetails)
@@ -1345,5 +1545,12 @@ void CHardwareListingCAN::InitializeControllerDetails(int nItem)
 	m_pControllerDetails[nItem].m_unDataSJW                      = 03;
 	m_pControllerDetails[nItem].m_bTxDelayCompensationControl    = 0;   // OCI_CANFD_TX_DELAY_COMPENSATION_OFF
 	m_pControllerDetails[nItem].m_unTxSecondarySamplePointOffset = 0;
+
+	// BUSMASTER-NG: a channel added to the list starts with the last baud rate used with this interface
+	CString omLastBaudRate = omReadLastBaudRate(nItem + 1);
+	if (!omLastBaudRate.IsEmpty())
+	{
+		vApplyBaudRate(nItem, omLastBaudRate);
+	}
 	
 }

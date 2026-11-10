@@ -97,6 +97,9 @@ protected:
     DECLARE_MESSAGE_MAP()
 private:
     void vEnableDisableButtons();
+	void vApplyBaudRate(int nItem, const CString& omBaudRate);
+	void vApplyLastBaudRates();
+	void vSaveLastBaudRates();
 	void vUpdateControllerDetails();
 	void vFillControllerConfigDetails();
 	void    vValidateBaudRate();
@@ -153,6 +156,9 @@ private:
 	void vEnableBTRParams(BOOL bEnable);
 	
 public:
+	// BUSMASTER-NG: the baud rate is a drop-down list that also accepts a typed value; m_omEditBaudRate is the edit
+	// part of the combo box, which keeps the digits only input of CRadixEdit
+	CComboBox   m_omComboBaudRate;
 	CRadixEdit  m_omEditBaudRate;
 	CString m_omStrEditBaudRate;
 	CRadixEdit   m_omEditBTR1;
@@ -162,6 +168,7 @@ public:
 	BOOL m_bDialogCancel;
 	IChangeRegisters* m_pAdvChnlConfig;
 	afx_msg void OnEnKillfocusCanEditBaudRate();
+	afx_msg void OnCbnSelendokCanBaudRate();
 	void OnKillFocusOfEditBox(CEdit* , CString, bool );
 	void ValidationOfKillFocus( CEdit* omEditBaudRate, CString omStrEditBaudRate, bool bchkCANFD, INT nMaxBitRateAllowed );
 	afx_msg void OnBnClickedButtonAdvance();
