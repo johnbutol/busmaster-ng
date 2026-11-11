@@ -42,6 +42,8 @@
 // UDS Protocol
 //#include "DIL_Interface/DILI_UDS_Protocol.h"
 #include "UDS_Protocol/UDS_Extern.h"
+// CANopen
+#include "CANopen/CANopen_Extern.h"
 
 // For getting name of a permanent exported function from the user-defined DLL.
 #include "MessageList.h"
@@ -301,6 +303,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWndEx)
     //UDS
     ON_COMMAND(IDM_UDS,OnCfgnUdsMainWnd)
     ON_COMMAND(IDD_SETTINGS_UDS,OnCfgnUdsSettingsWnd)
+    ON_COMMAND_RANGE(IDM_CANOPEN, IDM_CANOPEN, OnCANopenCommand)
+    ON_UPDATE_COMMAND_UI_RANGE(IDM_CANOPEN, IDM_CANOPEN, OnUpdateCANopenCommand)
+    ON_COMMAND_RANGE(IDM_CANOPEN_CLEAR, IDM_CANOPEN_PAUSE, OnCANopenCommand)
+    ON_UPDATE_COMMAND_UI_RANGE(IDM_CANOPEN_CLEAR, IDM_CANOPEN_PAUSE, OnUpdateCANopenCommand)
     ON_WM_SHOWWINDOW()
     ON_WM_DESTROY()
     ON_UPDATE_COMMAND_UI(ID_FILE_NEW, OnUpdateFileNew)
@@ -3797,6 +3803,9 @@ void CMainFrame::OnClose()
         // Update Status bar
 		m_wndStatusBar.SetPaneIcon(INDEX_J1939_LOG_ICON, m_hLogOffIcon);
     }
+    // CANopen analysis: detach from the CAN driver while it still exists
+    CANopen_Shutdown();
+
 	//now unloadplugins;
 	mPluginManager->unLoadPlugins();
 
@@ -6087,6 +6096,8 @@ void CMainFrame::OnFileConnect()
 				if (g_pouDIL_CAN_Interface->DILC_StartHardware() == S_OK)
                 {
                     ouWaitIndicator.SetWindowText(_("Connected... "));
+                    // CANopen window: same time reference as the message window
+                    CANopen_OnConnect();
 					busStatus.mBus = ETYPE_BUS::CAN;
 					busStatus.mEventType = eBUSEVENT::ON_CONNECT;
 					mPluginManager->notifyPlugins(eBusmaster_Event::Bus_Status, &busStatus);
@@ -7889,6 +7900,30 @@ void CMainFrame::OnCfgnUdsMainWnd()
 void CMainFrame::OnCfgnUdsSettingsWnd()
 {
     HRESULT hola = DIL_UDS_ShowSettingWnd(this->m_hWnd);
+}
+
+/**
+ * Command of the CANopen drop-down of the ribbon: Activate (IDM_CANOPEN) shows or hides the CANopen window,
+ * whose first opening starts the analysis of the CAN traffic; the other ones are the display options.
+ */
+static int nCANopenCommand(UINT nID)
+{
+    return nID == IDM_CANOPEN ? CANOPEN_CMD_ACTIVATE : CANOPEN_CMD_CLEAR + (int)(nID - IDM_CANOPEN_CLEAR);
+}
+
+void CMainFrame::OnCANopenCommand(UINT nID)
+{
+    CANopen_Command(m_hWnd, nCANopenCommand(nID));
+}
+
+void CMainFrame::OnUpdateCANopenCommand(CCmdUI* pCmdUI)
+{
+    const int nState = CANopen_GetCommandState(nCANopenCommand(pCmdUI->m_nID));
+    pCmdUI->Enable((nState & CANOPEN_STATE_ENABLED) != 0);
+    if (pCmdUI->m_nID != IDM_CANOPEN_CLEAR)
+    {
+        pCmdUI->SetCheck((nState & CANOPEN_STATE_CHECKED) != 0 ? 1 : 0);
+    }
 }
 /******************************************************************************/
 /*  Function Name    :  OnUpdateConfigureBaudrate                             */
@@ -9774,6 +9809,7 @@ HRESULT CMainFrame::IntializeDIL(UINT unDefaultChannelCnt, bool bLoadedFromXml)
                         bInitFrameProcCAN(); // Initialize logger module
                         vReRegisterAllCANNodes();
                         vSW_DoInitialization(CAN);
+                        CANopen_DoInitialization();
                         if ( nullptr != m_podMsgWndThread )
                         {
                             m_podMsgWndThread->vUpdateClientID(CAN, g_dwClientID);

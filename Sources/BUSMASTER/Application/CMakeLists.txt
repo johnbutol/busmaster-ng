@@ -220,6 +220,7 @@ add_definitions(-Od -GF)
 set_target_properties(BUSMASTER PROPERTIES LINK_FLAGS "/NODEFAULTLIB:daouuid")
 target_link_libraries(BUSMASTER
   Winmm shlwapi htmlhelp psapi
+  CANopen
   CommonClass
   DataTypes
   Utils

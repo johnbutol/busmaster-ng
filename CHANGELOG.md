@@ -8,6 +8,20 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**CANopen** (first version: passive analysis of the CAN traffic)
+- *CAN → Protocols → CANopen* opens a window with the nodes seen on the bus and the decoded events: NMT, SYNC,
+  TIME, EMCY, PDO, SDO (expedited, segmented and block transfers, with the abort codes), heartbeat, boot-up, node
+  guarding and LSS, for the identifiers of the CiA 301 predefined connection set.
+- The node list shows the NMT state, the heartbeat period measured on the bus, a missing heartbeat, and the last
+  emergency of each node.
+- The CANopen drop-down has the options of the message window: Activate, Clear, Time Mode (system, absolute,
+  relative), Overwrite (one row per kind of event), plus Show Last and Pause. The times are the same as in the
+  message window.
+- A right click on the column titles hides or shows columns and filters the event types; a right click on a node
+  shows only its events. Ctrl+C copies the selected events.
+- Not yet: sending NMT or SDO commands, EDS files, the meaning of the PDO contents, COB-IDs changed from their
+  defaults, and saving the window settings in the configuration.
+
 ## 3.5.0 "Overdrive" - 2026-11-10
 
 Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that

@@ -1195,6 +1195,14 @@
 #define ID_CHECK2                       40080
 #define IDM_UDS                         40100
 #define IDD_SETTINGS_UDS                40101
+#define IDM_CANOPEN                     40102
+#define IDM_CANOPEN_CLEAR               40115
+#define IDM_CANOPEN_SYSTEM_TIME         40116
+#define IDM_CANOPEN_ABSOLUTE_TIME       40117
+#define IDM_CANOPEN_RELATIVE_TIME       40118
+#define IDM_CANOPEN_OVERWRITE           40119
+#define IDM_CANOPEN_SHOW_LAST           40120
+#define IDM_CANOPEN_PAUSE               40121
 #define ID_RIBBON_HIDE                  40105
 #define ID_ACCELERATOR40109             40109
 #define ID_BUTTON_TOGGLERIBBON          40111
@@ -1257,7 +1265,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        149
-#define _APS_NEXT_COMMAND_VALUE         40115
+#define _APS_NEXT_COMMAND_VALUE         40122
 #define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           122
 #endif

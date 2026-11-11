@@ -1958,6 +1958,14 @@ STRINGTABLE
 BEGIN
     IDM_UDS                 "Configure Diagnostic messages for Transmission and Reception\nTransmit Window"
     IDD_SETTINGS_UDS        "Configure settings for Diagnostic Message Transmission and Reception\nSettings"
+    IDM_CANOPEN             "Show or hide the CANopen window, which decodes the CANopen traffic of the CAN bus: nodes, NMT, heartbeat, EMCY, SDO and PDO\nActivate"
+    IDM_CANOPEN_CLEAR       "Clear the events and the nodes of the CANopen window\nClear"
+    IDM_CANOPEN_SYSTEM_TIME "Show the time of day of the events, as the message window\nSystem Time"
+    IDM_CANOPEN_ABSOLUTE_TIME "Show the time of the events since the connection\nAbsolute Time"
+    IDM_CANOPEN_RELATIVE_TIME "Show the time since the previous event (the previous one of the same kind in overwrite mode)\nRelative Time"
+    IDM_CANOPEN_OVERWRITE   "One row per kind of event (channel, COB-ID, direction and type), updated with the last one\nOverwrite"
+    IDM_CANOPEN_SHOW_LAST   "Scroll the CANopen window to the newest event\nShow Last"
+    IDM_CANOPEN_PAUSE       "Stop taking new events in the CANopen window; the analysis of the nodes goes on\nPause"
 END
 
 #endif    // English (United States) resources
