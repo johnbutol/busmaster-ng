@@ -1,8 +1,15 @@
 <#
   BUSMASTER-NG: builds the release packages from a finished build in Sources\BUSMASTER\BIN\Release.
 
-  The build is the Windows 7 compatible one (Visual Studio 2013 toolset without SSE2, see Sources\Directory.Build.props;
-  the runtime copied next to the executable follows the one BUSMASTER.exe imports). From it this script makes:
+  The runtime copied next to the executable follows the one BUSMASTER.exe imports.
+
+  Windows 7 build (Visual Studio 2013 toolset without SSE2, see Sources\Directory.Build.props): every binary uses the
+  Visual C++ 2013 runtime, copied next to the executable, and nothing needs the Universal CRT, so one set of files runs
+  on Windows 7 SP1, 10 and 11. This script makes:
+    BUSMASTER-NG_<v>_win32.zip        portable, Windows 7 SP1 / 10 / 11
+    BUSMASTER-NG_<v>_setup.exe        installer (with -Installer, needs Inno Setup 6), no runtime to install
+
+  Default build (Visual Studio 2022 toolset, needs SSE2):
     BUSMASTER-NG_<v>_win32.zip        portable, Windows 10 / 11
     BUSMASTER-NG_<v>_win32_win7.zip   portable, Windows 7 SP1: the same files plus the Universal CRT (ucrtbase.dll and
                                       the api-ms-win-*.dll forwarders). Windows 10 and later always use their own
@@ -22,7 +29,7 @@
   to install. Without -MinGW, existing libraries are used; if there are none, the package is made without them and a
   warning is shown.
 
-  -VCRedist2013 is the Visual C++ 2013 Redistributable (x86) from Microsoft (vcredist_x86.exe, 12.0.40664,
+  -VCRedist2013 (default build only) is the Visual C++ 2013 Redistributable (x86) from Microsoft (vcredist_x86.exe, 12.0.40664,
   https://aka.ms/highdpimfc2013x86enu). The installer runs it only when the runtime is missing. By default it is taken
   from Tools\redist\vcredist2013_x86.exe (not in git); without it, the installer is made without the runtime and a
   warning is shown.
@@ -61,8 +68,9 @@ if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
 # The Windows 7 build (Visual Studio 2013 toolset, see Sources\Directory.Build.props) uses the 120 runtime, the default
 # build the one of Visual Studio 2022: BUSMASTER.exe imports mfc120.dll or mfc140.dll.
 $exeText = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes((Join-Path $bin "BUSMASTER.exe")))
-if ($exeText -match "(?i)mfc120\.dll") {
-    Write-Host "Visual Studio 2013 build: 120 runtime"
+$win7Build = $exeText -match "(?i)mfc120\.dll"
+if ($win7Build) {
+    Write-Host "Visual Studio 2013 build: 120 runtime, for Windows 7 / 10 / 11"
     $redist = "${env:ProgramFiles(x86)}\Microsoft Visual Studio 12.0\VC\redist\x86"
     $runtimeDirs = "Microsoft.VC120.CRT", "Microsoft.VC120.MFC"
 }
@@ -77,10 +85,13 @@ foreach ($sub in $runtimeDirs) {
     if (-not (Test-Path $dir)) { throw "Runtime not found: $dir" }
     Copy-Item "$dir\*.dll" $stage
 }
+# the 120 runtime does not use the Universal CRT
+if (-not $win7Build) {
 $ucrt = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\*\ucrt\DLLs\x86" -Directory | Sort-Object FullName | Select-Object -Last 1
 if ($null -eq $ucrt) { throw "Universal CRT redistributable not found (Windows 10 SDK)" }
 New-Item -ItemType Directory -Force $ucrtStage | Out-Null
 Copy-Item "$($ucrt.FullName)\*.dll" $ucrtStage
+}
 
 # 3. node simulation: makefile template, headers and helper libraries
 Write-Host "Node simulation files"
@@ -122,35 +133,48 @@ Copy-Item (Join-Path $PSScriptRoot "third-party-notices.txt") (Join-Path $docs "
 Remove-Item (Join-Path $stage "Changelog.txt") -ErrorAction SilentlyContinue
 $readme = (Get-Content (Join-Path $PSScriptRoot "release-readme.txt") -Raw).Replace("{VERSION}", $Version)
 
-# 5. the two portable packages: Windows 10 / 11, and Windows 7 with the UCRT
+# 5. portable packages: the Windows 7 build has one for all versions; the default build one for Windows 10 / 11 and
+#    one for Windows 7 with the UCRT
 Write-Host "Portable packages"
-$readme.Replace("{EDITION}", "Windows 10 / 11") | Set-Content (Join-Path $stage "README.txt") -Encoding ASCII
-robocopy $stage $stage7 /E /NJH /NJS /NDL /NFL /NP | Out-Null
-if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
-Copy-Item "$ucrtStage\*.dll" $stage7
-$readme.Replace("{EDITION}", "Windows 7 SP1") | Set-Content (Join-Path $stage7 "README.txt") -Encoding ASCII
-foreach ($pkg in @(@($stage, $zip), @($stage7, $zip7))) {
-    if (Test-Path $pkg[1]) { Remove-Item $pkg[1] }
-    Compress-Archive -Path $pkg[0] -DestinationPath $pkg[1] -CompressionLevel Optimal
+foreach ($old in $zip, $zip7) { if (Test-Path $old) { Remove-Item $old } }
+if ($win7Build) {
+    $readme.Replace("{EDITION}", "Windows 7 SP1 / 10 / 11") | Set-Content (Join-Path $stage "README.txt") -Encoding ASCII
+    $pkgs = @(, @($stage, $zip))
 }
-$packages = @($zip, $zip7)
+else {
+    $readme.Replace("{EDITION}", "Windows 10 / 11") | Set-Content (Join-Path $stage "README.txt") -Encoding ASCII
+    robocopy $stage $stage7 /E /NJH /NJS /NDL /NFL /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
+    Copy-Item "$ucrtStage\*.dll" $stage7
+    $readme.Replace("{EDITION}", "Windows 7 SP1") | Set-Content (Join-Path $stage7 "README.txt") -Encoding ASCII
+    $pkgs = @(@($stage, $zip), @($stage7, $zip7))
+}
+$packages = @()
+foreach ($pkg in $pkgs) {
+    Compress-Archive -Path $pkg[0] -DestinationPath $pkg[1] -CompressionLevel Optimal
+    $packages += $pkg[1]
+}
 
-# 6. installer (Inno Setup 6), from the Windows 10 / 11 files plus the UCRT for Windows 7
+# 6. installer (Inno Setup 6), from the files of the first package; for the default build plus the UCRT for Windows 7
+#    and the Visual C++ 2013 runtime (needed by DBManager.dll), which the Windows 7 build has next to the executable
 if ($Installer) {
     $iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe") |
         Where-Object { Test-Path $_ } | Select-Object -First 1
     if ($null -eq $iscc) { throw "Inno Setup 6 not found (ISCC.exe): install it, e.g. winget install JRSoftware.InnoSetup" }
     # the file version must be numeric: 3.4.1-test -> 3.4.1
     $fileVersion = [regex]::Match($Version, '^\d+(\.\d+){0,3}').Value
-    $defines = @("/DAppVersion=$Version", "/DFileVersion=$fileVersion", "/DStageDir=$stage", "/DUcrtDir=$ucrtStage", "/DOutDir=$OutDir",
+    $defines = @("/DAppVersion=$Version", "/DFileVersion=$fileVersion", "/DStageDir=$stage", "/DOutDir=$OutDir",
                  "/DIconFile=$(Join-Path $app 'Res\BUSMASTER.ico')")
-    $defaultRedist = Join-Path $PSScriptRoot "redist\vcredist2013_x86.exe"
-    if ($VCRedist2013 -eq "" -and (Test-Path $defaultRedist)) { $VCRedist2013 = $defaultRedist }
-    if ($VCRedist2013 -ne "") {
-        if (-not (Test-Path $VCRedist2013)) { throw "Not found: $VCRedist2013" }
-        $defines += "/DVCRedist2013=$((Resolve-Path $VCRedist2013).Path)"
+    if (-not $win7Build) {
+        $defines += "/DUcrtDir=$ucrtStage"
+        $defaultRedist = Join-Path $PSScriptRoot "redist\vcredist2013_x86.exe"
+        if ($VCRedist2013 -eq "" -and (Test-Path $defaultRedist)) { $VCRedist2013 = $defaultRedist }
+        if ($VCRedist2013 -ne "") {
+            if (-not (Test-Path $VCRedist2013)) { throw "Not found: $VCRedist2013" }
+            $defines += "/DVCRedist2013=$((Resolve-Path $VCRedist2013).Path)"
+        }
+        else { Write-Warning "Installer made without the Visual C++ 2013 runtime: put it in $defaultRedist or use -VCRedist2013" }
     }
-    else { Write-Warning "Installer made without the Visual C++ 2013 runtime: put it in $defaultRedist or use -VCRedist2013" }
     Write-Host "Installer"
     & $iscc /Q @defines (Join-Path $PSScriptRoot "installer.iss")
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed ($LASTEXITCODE)" }

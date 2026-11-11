@@ -161,6 +161,11 @@ runs with TDM-GCC 4.8.1 (the MinGW offered by the setup of BUSMASTER 3.2.2: gcc-
 mingwrt / w32api 4.0.3, mingw32-make 3.82.90). A current MinGW such as WinLibs GCC 16.2 does **not** run on such a
 processor: its own programs (`gcc.exe`, `cc1plus.exe`, `as.exe`, `ld.exe`, `libstdc++-6.dll`, ...) are built with
 SSE2 and crash, although the code they generate has no SSE2 (32-bit GCC defaults to x87).
+
+From this build `Tools\make-release.ps1` makes one portable zip for Windows 7 SP1, 10 and 11 (no Universal CRT: the
+Visual C++ 2013 runtime next to the executable is all it needs) and, with `-Installer`, a setup without runtimes to
+install. The setup made by Inno Setup 6.7.3 does **not** run on a processor without SSE2: its own code (the `Move`
+routine of the Delphi runtime) uses SSE2 without checking the processor (seen with Intel SDE); use the zip there.
 The default build and the Windows 7 build write to the same `BIN\Release` folder: do a clean build whenever you
 switch between them.
 

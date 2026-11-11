@@ -2,7 +2,8 @@
 ;   AppVersion   version, e.g. 3.5.0 or 3.5.0-test
 ;   FileVersion  its numeric part, e.g. 3.5.0
 ;   StageDir     the Windows 10 / 11 package folder
-;   UcrtDir      the Universal CRT DLLs, installed only on Windows 7
+;   UcrtDir      (default build only) the Universal CRT DLLs, installed only on Windows 7; the Windows 7 build
+;                (Visual Studio 2013 toolset) does not use the Universal CRT and has its runtime in StageDir
 ;   OutDir       where BUSMASTER-NG_<version>_setup.exe is written
 ;   IconFile     BUSMASTER.ico
 ;   VCRedist2013 (optional) vcredist_x86.exe of Visual C++ 2013, run only when the runtime is missing
@@ -48,7 +49,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Windows 10 and later always use their own Universal CRT: these copies are for Windows 7 only
+#ifdef UcrtDir
 Source: "{#UcrtDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion; OnlyBelowVersion: 10.0
+#endif
 #ifdef VCRedist2013
 Source: "{#VCRedist2013}"; DestDir: "{tmp}"; DestName: "vcredist2013_x86.exe"; Flags: deleteafterinstall; Check: NeedsVCRedist2013
 #endif
