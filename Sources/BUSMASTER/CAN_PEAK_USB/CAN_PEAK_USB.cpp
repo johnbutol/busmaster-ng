@@ -238,8 +238,15 @@ static PFN_CAN_GetValue     pfCAN_GetValue = nullptr;
 static PFN_CAN_SetValue     pfCAN_SetValue = nullptr;
 static PFN_CAN_GetErrorText pfCAN_GetErrorText = nullptr;
 
+static volatile LONG sg_lBlinking = 0; // 1 while the thread of the Blink button runs (bPeakBlinkChannel)
+
 static void vUnloadPcanBasic()
 {
+    // The Blink button runs for 3 seconds in a thread of this DLL: let it end
+    for (int i = 0; (i < 50) && (sg_lBlinking != 0); i++)
+    {
+        Sleep(100);
+    }
     if (nullptr != sg_hPcanBasic)
     {
         FreeLibrary(sg_hPcanBasic);
@@ -1497,15 +1504,24 @@ HRESULT CDIL_CAN_PEAK_USB::CAN_GetCntrlStatus(const HANDLE& /*hEvent*/, UINT& /*
    Blink button of the controller dialog
    --------------------------------------------------------------------------------------------------------------- */
 
-static DWORD WINAPI dwStopBlinkThreadProc(LPVOID pParam)
+/* A PCAN-USB flashes its LED once at each change of PCAN_CHANNEL_IDENTIFYING (seen with firmware 6.0.1): the value
+   is switched every 300 ms for 3 seconds, and left off. */
+static DWORD WINAPI dwBlinkThreadProc(LPVOID pParam)
 {
-    Sleep(3000);
     TPCANHandle hHandle = (TPCANHandle)(UINT_PTR)pParam;
+    DWORD dwOn = PCAN_PARAMETER_ON;
     DWORD dwOff = PCAN_PARAMETER_OFF;
+    for (int i = 1; (i < 10) && (nullptr != pfCAN_SetValue); i++)
+    {
+        Sleep(300);
+        pfCAN_SetValue(hHandle, PCAN_CHANNEL_IDENTIFYING, (i & 1) ? &dwOff : &dwOn, sizeof(DWORD));
+    }
+    Sleep(300);
     if (nullptr != pfCAN_SetValue)
     {
         pfCAN_SetValue(hHandle, PCAN_CHANNEL_IDENTIFYING, &dwOff, sizeof(dwOff));
     }
+    InterlockedExchange(&sg_lBlinking, 0);
     return 0;
 }
 
@@ -1517,16 +1533,25 @@ bool bPeakBlinkChannel(const std::string& omDescription)
     {
         return false;
     }
+    if (InterlockedExchange(&sg_lBlinking, 1) != 0)
+    {
+        return true;    // already blinking
+    }
     TPCANHandle hHandle = sg_asAvailable[nIndex].m_hHandle;
     DWORD dwOn = PCAN_PARAMETER_ON;
     if (pfCAN_SetValue(hHandle, PCAN_CHANNEL_IDENTIFYING, &dwOn, sizeof(dwOn)) != PCAN_ERROR_OK)
     {
+        InterlockedExchange(&sg_lBlinking, 0);
         return false;
     }
-    HANDLE hThread = CreateThread(nullptr, 0, dwStopBlinkThreadProc, (LPVOID)(UINT_PTR)hHandle, 0, nullptr);
-    if (nullptr != hThread)
+    HANDLE hThread = CreateThread(nullptr, 0, dwBlinkThreadProc, (LPVOID)(UINT_PTR)hHandle, 0, nullptr);
+    if (nullptr == hThread)
     {
-        CloseHandle(hThread);
+        DWORD dwOff = PCAN_PARAMETER_OFF;
+        pfCAN_SetValue(hHandle, PCAN_CHANNEL_IDENTIFYING, &dwOff, sizeof(dwOff));
+        InterlockedExchange(&sg_lBlinking, 0);
+        return true;
     }
+    CloseHandle(hThread);
     return true;
 }
