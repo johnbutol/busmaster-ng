@@ -1,10 +1,9 @@
 // Resources of the PEAK CAN driver (PCAN-Basic).
-// BUSMASTER-NG: the hardware selection dialog is the shared one of DIL_Interface; the version resource is added
-// to every DLL by Sources\Directory.Build.targets.
+// BUSMASTER-NG: the hardware selection dialog is the shared one of DIL_Interface; the controller and acceptance
+// filter dialogs are those of the Kvaser driver (they come from the original PEAK driver), with a Blink button.
+// The version resource is added to every DLL by Sources\Directory.Build.targets.
 //
-// resource.h first: it defines IDD_DLG_HW_LISTING_CAN, the name of the dialog in ChannelSelection.rc
-#include "../DIL_Interface/resource.h"
-#include "../DIL_Interface/ChannelSelectionResource.h"
+#include "CAN_PEAK_USB_Resource.h"
 #include "../DIL_Interface/ChannelSelection.rc"
 
 #include "afxres.h"
@@ -18,10 +17,114 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Bitmap (image list of the hardware selection dialog)
+// Dialog
 //
 
-IDR_BMP_NET             BITMAP                  "res\\bmp_net.bmp"
+IDD_DLG_CHANGE_REGISTERS DIALOGEX 0, 0, 390, 260
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CONTEXTHELP
+CAPTION "Configure CAN Controller"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "List1",IDC_LIST_CHANNELS,"SysListView32",LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,6,8,87,178
+    EDITTEXT        IDC_EDIT_BAUD_RATE,148,13,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_BTR0,148,33,40,14,ES_UPPERCASE | ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_BTR1,148,54,40,14,ES_UPPERCASE | ES_AUTOHSCROLL
+    COMBOBOX        IDC_COMB_CLOCK,218,15,29,46,CBS_DROPDOWNLIST | CBS_SORT | WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMB_SAMPLING,218,52,36,39,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_BRP,293,54,21,13,ES_NOHIDESEL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
+    EDITTEXT        IDC_EDIT_WARNING_LIMIT,334,52,21,14,ES_AUTOHSCROLL
+    CONTROL         "List1",IDC_LSTC_BTR_LIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_AUTOARRANGE | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,102,76,282,108
+    PUSHBUTTON      "OK",IDC_ButtonOK,264,237,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,319,237,50,14
+    GROUPBOX        "",IDC_STAT_BAUD_RATE,102,3,105,70,BS_CENTER
+    GROUPBOX        "Options",IDC_STAT_ACCEPTANCE,287,3,97,31
+    LTEXT           "Baud Rate:",IDC_STAT_BUAD_RATE,109,13,36,14,SS_CENTERIMAGE
+    LTEXT           "BTR0: 0x",IDC_STAT_BTR0,115,33,30,14,SS_CENTERIMAGE
+    LTEXT           "BTR1: 0x",IDC_STAT_BTR1,115,54,30,14,SS_CENTERIMAGE
+    GROUPBOX        "Clock",IDC_STAT_CLOCK,212,3,70,31,BS_LEFT
+    LTEXT           "bps",IDC_STAT_KBPS,188,13,17,14,SS_CENTERIMAGE
+    GROUPBOX        "No. of Sample/Bit",IDC_STATIC,212,39,70,34,BS_LEFT
+    LTEXT           "MHz",IDC_STATIC,250,19,16,8
+    GROUPBOX        "BRP",IDC_STATIC,287,39,35,34
+    GROUPBOX        "Warning Limit",IDC_STATIC,327,39,57,34
+    PUSHBUTTON      "&Filter",IDC_CBTN_ACCEPTANCE,294,14,39,14
+    PUSHBUTTON      "&Blink",IDC_CBTN_BLINK,338,14,39,14
+    CONTROL         "________________________________________________________________________________________________",IDC_STAT_LINE3,
+                    "Static",SS_LEFTNOWORDWRAP | WS_DISABLED | WS_GROUP,3,208,384,10
+    LTEXT           "Description: ",IDC_STATIC,10,222,40,8
+    EDITTEXT        IDC_EDIT_CHANNEL_DESC,49,222,338,13,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER
+    GROUPBOX        "Additional",IDC_STATIC,102,185,281,23,BS_LEFT | NOT WS_VISIBLE
+    CONTROL         "Self Reception",IDC_CHKB_SELF_RECEPTION,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,139,194,62,12
+END
+
+IDD_DLG_ACCEPTANCE DIALOGEX 0, 0, 223, 228
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CONTEXTHELP | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CONTEXTHELP
+CAPTION "Acceptance Filter"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "Single",IDC_RBTN_SINGLE_FILTER_MODE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,53,20,52,8
+    CONTROL         "Dual",IDC_RBTN_DUAL_FILTER_MODE,"Button",BS_AUTORADIOBUTTON,107,20,52,8
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_CODE1,39,115,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_CODE2,77,115,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_CODE3,119,115,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_CODE4,161,115,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_MASK1,39,164,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_MASK2,77,164,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_MASK3,119,164,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_ACCEPTANCE_MASK4,161,164,26,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "&Cancel",IDCANCEL,121,194,50,14
+    DEFPUSHBUTTON   "O&K",IDC_CBTN_ACCETANCE_OK,43,194,50,14
+    GROUPBOX        "Mode",IDC_STAT_FILTER_MODE,43,7,131,28
+    GROUPBOX        "Code",IDC_STAT_ACCEPTANCE_FILTER_CODE,21,94,171,42
+    GROUPBOX        "Mask",IDC_STAT_ACCEPTANCE_FILTER_MASK,21,140,171,44
+    LTEXT           "0x",IDC_STATIC,29,117,8,8
+    LTEXT           "0x",IDC_STATIC,69,117,8,8
+    LTEXT           "0x",IDC_STATIC,111,117,8,8
+    LTEXT           "0x",IDC_STATIC,153,117,8,8
+    LTEXT           "0x",IDC_STATIC,29,166,8,8
+    LTEXT           "0x",IDC_STATIC,69,166,8,8
+    LTEXT           "0x",IDC_STATIC,111,166,8,8
+    LTEXT           "0x",IDC_STATIC,153,166,8,8
+    LTEXT           "Byte0",IDC_STATIC,43,104,19,8
+    LTEXT           "Byte1",IDC_STATIC,83,104,19,8
+    LTEXT           "Byte2",IDC_STATIC,125,104,19,8
+    LTEXT           "Byte3",IDC_STATIC,165,104,19,8
+    LTEXT           "Byte0",IDC_STATIC,43,153,19,8
+    LTEXT           "Byte1",IDC_STATIC,83,153,19,8
+    LTEXT           "Byte2",IDC_STATIC,125,153,19,8
+    LTEXT           "Byte3",IDC_STATIC,165,153,19,8
+    LTEXT           "The message is accepted if ((code XOR id) AND mask) == 0",IDC_STATIC,14,217,197,8
+    CONTROL         "Accept All",IDC_RBTN_FILTER_ACCEPT_ALL,"Button",BS_AUTORADIOBUTTON,53,54,45,8
+    CONTROL         "Reject All",IDC_RBTN_FILTER_REJECT_ALL,"Button",BS_AUTORADIOBUTTON,107,54,45,8
+    CONTROL         "Use Mask and Code",IDC_RBTN_FILTER_MANUAL_SET,"Button",BS_AUTORADIOBUTTON,53,71,80,8
+    GROUPBOX        "Filter Types",IDC_STAT_FILTER_TYPES,43,39,131,51
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_DLG_CHANGE_REGISTERS DLGINIT
+BEGIN
+    IDC_COMB_CLOCK, 0x403, 3, 0
+0x3631, "\000" 
+    IDC_COMB_SAMPLING, 0x403, 2, 0
+0x0031, 
+    IDC_COMB_SAMPLING, 0x403, 2, 0
+0x0033, 
+    0
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon (channel list of the controller dialog) and bitmap (image list of the hardware selection dialog)
+//
+
+IDR_PGM_EDTYPE          ICON                    "res/BUSMASTERDoc.ico"
+IDR_BMP_NET             BITMAP                  "res/bmp_net.bmp"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

@@ -23,8 +23,12 @@
  * - Every PEAK channel PCAN-Basic knows (USB, PCI, LAN, PC Card) is listed in the hardware selection dialog;
  *   up to CHANNEL_ALLOWED channels can be used at the same time.
  * - Classic CAN (11 / 29 bit identifiers, RTR, 0..8 data bytes). The bit rate comes from the hardware selection
- *   dialog: the usual rates use the BTR0/BTR1 values PEAK recommends, any other rate the values computed for an
- *   SJA1000 at 16 MHz (the format of CAN_Initialize).
+ *   dialog, as BTR0/BTR1 of an SJA1000 at 16 MHz (the format of CAN_Initialize): the values of the controller
+ *   dialog (Advanced button) when they give the bit rate, else those PEAK recommends for the usual rates, else
+ *   computed ones.
+ * - The controller dialog (ChangeRegisters.cpp, AcceptanceFilterDlg.cpp: the dialogs of the Kvaser driver, which
+ *   come from the original PEAK driver) also sets the acceptance filter, applied to the received frames, and has a
+ *   Blink button (PCAN_CHANNEL_IDENTIFYING).
  * - Listen-only when the controller mode is passive.
  * - Reception in one thread woken by the PCAN-Basic receive events. Hardware time stamps (microseconds) are
  *   brought into the QueryPerformanceCounter time base of BUSMASTER.
@@ -40,6 +44,7 @@
 #include "DILPluginHelperDefs.h"
 #include "Utility/UtilFunctions.h"
 #include "PCANBasicDyn.h"
+#include <math.h>
 
 #define USAGE_EXPORT
 #include "CAN_PEAK_USB_Extern.h"
@@ -157,9 +162,34 @@ struct SPeakChannel
     bool m_bRxEventSet;
     unsigned char m_ucErrorCount;   // stands for the bus state, see the top of the file
     bool m_bOverrunReported;
+    /* Acceptance filter of the controller dialog, [0] standard and [1] extended frames: accept all, reject all or
+       accept when ((code XOR id) AND mask) == 0 */
+    eHW_FILTER_TYPES m_aeFilterType[defCAN_MSG_IDS];
+    DWORD m_adwFilterCode[defCAN_MSG_IDS];
+    DWORD m_adwFilterMask[defCAN_MSG_IDS];
+
+    bool bAccepts(DWORD dwId, bool bExtended) const
+    {
+        int i = bExtended ? 1 : 0;
+        switch (m_aeFilterType[i])
+        {
+            case HW_FILTER_REJECT_ALL:
+                return false;
+            case HW_FILTER_MANUAL_SET:
+                return ((m_adwFilterCode[i] ^ dwId) & m_adwFilterMask[i]) == 0;
+            default:
+                return true;
+        }
+    }
 
     void vReset()
     {
+        for (int i = 0; i < defCAN_MSG_IDS; i++)
+        {
+            m_aeFilterType[i] = HW_FILTER_ACCEPT_ALL;
+            m_adwFilterCode[i] = 0;
+            m_adwFilterMask[i] = 0;
+        }
         m_hHandle = PCAN_NONEBUS;
         m_omDescription.clear();
         m_bInitialized = false;
@@ -578,11 +608,31 @@ static void vSetChannels(const int* pnAvailableIndex, UINT unCount)
     sg_unSavedChannels = sg_nNoOfChannels;
 }
 
-/* BTR0/BTR1 of the bit rate of a channel */
+/* BTR0/BTR1 of the bit rate of a channel. The BTR values of the configuration (chosen in the controller dialog, for
+   example for another sample point) are used when they give its bit rate; otherwise the values recommended by PEAK
+   for the usual rates, or the values computed for an SJA1000 at 16 MHz. */
 static TPCANBaudrate wGetBtr0Btr1(const SCONTROLLER_DETAILS& sDetails)
 {
     double dBaudRate = atof(sDetails.m_omStrBaudrate.c_str());
     long lBaudRate = (long)(dBaudRate + 0.5);
+
+    if (!sDetails.m_omStrBTR0.empty() && !sDetails.m_omStrBTR1.empty() && (dBaudRate > 0))
+    {
+        char* pcEnd0 = nullptr;
+        char* pcEnd1 = nullptr;
+        unsigned long ulBtr0 = strtoul(sDetails.m_omStrBTR0.c_str(), &pcEnd0, 16);
+        unsigned long ulBtr1 = strtoul(sDetails.m_omStrBTR1.c_str(), &pcEnd1, 16);
+        if ((*pcEnd0 == '\0') && (*pcEnd1 == '\0') && (ulBtr0 <= 0xFF) && (ulBtr1 <= 0xFF))
+        {
+            double dBtrRate = CUtilFunctions::dCalculateBaudRateFromBTRs(CString(sDetails.m_omStrBTR0.c_str()),
+                                                                         CString(sDetails.m_omStrBTR1.c_str()));
+            if (fabs(dBtrRate - dBaudRate) <= dBaudRate * 0.001)
+            {
+                return (TPCANBaudrate)((ulBtr0 << 8) | ulBtr1);
+            }
+        }
+    }
+
     switch (lBaudRate)
     {
         case 1000000: return PCAN_BAUD_1M;
@@ -610,6 +660,26 @@ static TPCANBaudrate wGetBtr0Btr1(const SCONTROLLER_DETAILS& sDetails)
         return (TPCANBaudrate)sDetails.m_nBTR0BTR1;
     }
     return PCAN_BAUD_500K;
+}
+
+/* Acceptance filter of a channel from its configuration. The four bytes of the dialog make a 32-bit value, Byte0
+   being the least significant byte (as in the Kvaser driver, whose dialog this is). */
+static DWORD dwFilterValue(const std::string& omByte0, const std::string& omByte1, const std::string& omByte2, const std::string& omByte3)
+{
+    return ((strtoul(omByte3.c_str(), nullptr, 16) & 0xFF) << 24) | ((strtoul(omByte2.c_str(), nullptr, 16) & 0xFF) << 16) |
+           ((strtoul(omByte1.c_str(), nullptr, 16) & 0xFF) << 8) | (strtoul(omByte0.c_str(), nullptr, 16) & 0xFF);
+}
+
+static void vLoadFilter(SPeakChannel& sChannel, const SCONTROLLER_DETAILS& sDetails)
+{
+    for (int i = 0; i < defCAN_MSG_IDS; i++)
+    {
+        sChannel.m_aeFilterType[i] = sDetails.m_enmHWFilterType[i];
+        sChannel.m_adwFilterCode[i] = dwFilterValue(sDetails.m_omStrAccCodeByte1[i], sDetails.m_omStrAccCodeByte2[i],
+                                                    sDetails.m_omStrAccCodeByte3[i], sDetails.m_omStrAccCodeByte4[i]);
+        sChannel.m_adwFilterMask[i] = dwFilterValue(sDetails.m_omStrAccMaskByte1[i], sDetails.m_omStrAccMaskByte2[i],
+                                                    sDetails.m_omStrAccMaskByte3[i], sDetails.m_omStrAccMaskByte4[i]);
+    }
 }
 
 static bool bIsListenOnly(UINT unChannelIndex)
@@ -695,6 +765,10 @@ static bool bReadChannel(UINT unChannelIndex)
         if (sMsg.MSGTYPE & PCAN_MESSAGE_ERRFRAME)
         {
             vWriteErrorIntoClientsBuffer(unChannelIndex, ERROR_BUS, OTHER_ERROR_RX, llGetRxTimeStamp(sTime));
+            continue;
+        }
+        if (!sChannel.bAccepts(sMsg.ID, (sMsg.MSGTYPE & PCAN_MESSAGE_EXTENDED) != 0))
+        {
             continue;
         }
 
@@ -972,8 +1046,9 @@ HRESULT CDIL_CAN_PEAK_USB::CAN_ListHwInterfaces(INTERFACE_HW_LIST& asSelHwInterf
 
         CWnd objMainWnd;
         objMainWnd.Attach(sg_hOwnerWnd);
-        CPeakCanBaudRateCheck ouBaudRateCheck;
-        CHardwareListingCAN ouHwList(asHwInterface, sg_nAvailable, anSelected, CAN, CHANNEL_ALLOWED, &objMainWnd, InitData, &ouBaudRateCheck);
+        // Advanced: bit timing (sample point, SJW), acceptance filter and Blink, as with the former PEAK driver
+        CChangeRegisters ouControllerDialog(nullptr, InitData, sg_nAvailable);
+        CHardwareListingCAN ouHwList(asHwInterface, sg_nAvailable, anSelected, CAN, CHANNEL_ALLOWED, &objMainWnd, InitData, &ouControllerDialog);
         INT_PTR nRet = ouHwList.DoModal();
         objMainWnd.Detach();
         if (nRet != IDOK)
@@ -1097,6 +1172,7 @@ HRESULT CDIL_CAN_PEAK_USB::CAN_StartHardware(void)
         sChannel.m_bListenOnly = bIsListenOnly(i);
         sChannel.m_ucErrorCount = 0;
         sChannel.m_bOverrunReported = false;
+        vLoadFilter(sChannel, sg_asControllerDetails[i]);
 
         // Listen-only is set before the initialisation; some versions accept it only afterwards
         DWORD dwListenOnly = sChannel.m_bListenOnly ? PCAN_PARAMETER_ON : PCAN_PARAMETER_OFF;
@@ -1418,21 +1494,39 @@ HRESULT CDIL_CAN_PEAK_USB::CAN_GetCntrlStatus(const HANDLE& /*hEvent*/, UINT& /*
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
-   Baud rate check of the hardware selection dialog
+   Blink button of the controller dialog
    --------------------------------------------------------------------------------------------------------------- */
 
-int CPeakCanBaudRateCheck::InvokeAdavancedSettings(PSCONTROLLER_DETAILS /*pControllerDetails*/, UINT /*nCount*/, UINT /*nSelected*/)
+static DWORD WINAPI dwStopBlinkThreadProc(LPVOID pParam)
 {
-    // No advanced settings: the bit rate is all PCAN-Basic needs for classic CAN
+    Sleep(3000);
+    TPCANHandle hHandle = (TPCANHandle)(UINT_PTR)pParam;
+    DWORD dwOff = PCAN_PARAMETER_OFF;
+    if (nullptr != pfCAN_SetValue)
+    {
+        pfCAN_SetValue(hHandle, PCAN_CHANNEL_IDENTIFYING, &dwOff, sizeof(dwOff));
+    }
     return 0;
 }
 
-double CPeakCanBaudRateCheck::vValidateBaudRate(double dBaudRate, int /*nItem*/, UINT /*unClock*/)
+/* Blinks the LED of the PEAK interface of a channel for 3 seconds */
+bool bPeakBlinkChannel(const std::string& omDescription)
 {
-    // 5 kbit/s is the slowest rate of PCAN-Basic, 1 Mbit/s the fastest of classic CAN
-    if ((dBaudRate < 5000) || (dBaudRate > 1000000))
+    int nIndex = nFindAvailableChannel(omDescription);
+    if ((nIndex < 0) || (nullptr == pfCAN_SetValue))
     {
-        return 500000;
+        return false;
     }
-    return dBaudRate;
+    TPCANHandle hHandle = sg_asAvailable[nIndex].m_hHandle;
+    DWORD dwOn = PCAN_PARAMETER_ON;
+    if (pfCAN_SetValue(hHandle, PCAN_CHANNEL_IDENTIFYING, &dwOn, sizeof(dwOn)) != PCAN_ERROR_OK)
+    {
+        return false;
+    }
+    HANDLE hThread = CreateThread(nullptr, 0, dwStopBlinkThreadProc, (LPVOID)(UINT_PTR)hHandle, 0, nullptr);
+    if (nullptr != hThread)
+    {
+        CloseHandle(hThread);
+    }
+    return true;
 }

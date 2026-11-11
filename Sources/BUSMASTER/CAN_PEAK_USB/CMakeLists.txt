@@ -1,13 +1,21 @@
 set(sources
   ../DIL_Interface/HardwareListingCAN.cpp
+  AcceptanceFilterDlg.cpp
   CAN_PEAK_USB.cpp
+  CANRegAnalysis.cpp
+  ChangeRegisters.cpp
   CAN_PEAK_USB_stdafx.cpp)
 
 set(headers
   ../DIL_Interface/HardwareListingCAN.h
+  AcceptanceFilterDlg.h
   CAN_PEAK_USB.h
+  CAN_PEAK_USB_Resource.h
   CAN_PEAK_USB_Extern.h
   CAN_PEAK_USB_stdafx.h
+  ChangeRegDefines.h
+  ChangeRegisters.h
+  ContrConfigPeakUsbDefs.h
   PCANBasicDyn.h)
 
 set(resources

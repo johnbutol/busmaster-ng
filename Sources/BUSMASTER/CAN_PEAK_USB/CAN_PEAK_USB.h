@@ -25,14 +25,7 @@
 #endif
 
 #include "DIL_Interface/HardwareListingCAN.h"
-
-/* Baud rate check of the hardware selection dialog: PCAN-Basic takes any rate an SJA1000 at 16 MHz can make */
-class CPeakCanBaudRateCheck : public IChangeRegisters
-{
-public:
-    int InvokeAdavancedSettings(PSCONTROLLER_DETAILS pControllerDetails, UINT nCount, UINT nSelected);
-    double vValidateBaudRate(double dBaudRate, int nItem, UINT unClock = 16);
-};
+#include "ChangeRegisters.h"    // controller dialog (Advanced button of the hardware selection dialog)
 
 class CCAN_PEAK_USB : public CWinApp
 {

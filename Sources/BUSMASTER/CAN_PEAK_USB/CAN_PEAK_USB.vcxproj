@@ -222,14 +222,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\DIL_Interface\HardwareListingCAN.cpp" />
+    <ClCompile Include="AcceptanceFilterDlg.cpp" />
     <ClCompile Include="CAN_PEAK_USB.cpp" />
+    <ClCompile Include="CANRegAnalysis.cpp" />
+    <ClCompile Include="ChangeRegisters.cpp" />
     <ClCompile Include="CAN_PEAK_USB_stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\DIL_Interface\HardwareListingCAN.h" />
+    <ClInclude Include="AcceptanceFilterDlg.h" />
     <ClInclude Include="CAN_PEAK_USB.h" />
     <ClInclude Include="CAN_PEAK_USB_Extern.h" />
+    <ClInclude Include="CAN_PEAK_USB_Resource.h" />
     <ClInclude Include="CAN_PEAK_USB_stdafx.h" />
+    <ClInclude Include="ChangeRegDefines.h" />
+    <ClInclude Include="ChangeRegisters.h" />
+    <ClInclude Include="ContrConfigPeakUsbDefs.h" />
     <ClInclude Include="PCANBasicDyn.h" />
   </ItemGroup>
   <ItemGroup>
@@ -237,6 +245,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\bmp_net.bmp" />
+    <Image Include="res\BUSMASTERDoc.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

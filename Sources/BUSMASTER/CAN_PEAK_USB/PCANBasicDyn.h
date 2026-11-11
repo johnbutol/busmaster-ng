@@ -74,6 +74,7 @@ typedef WORD  TPCANBaudrate;
 #define PCAN_LISTEN_ONLY        0x08U
 #define PCAN_CHANNEL_CONDITION  0x0DU
 #define PCAN_HARDWARE_NAME      0x0EU
+#define PCAN_CHANNEL_IDENTIFYING 0x15U  /* blinks the LED of the interface */
 #define PCAN_FIRMWARE_VERSION   0x29U   /* PCAN-Basic 4.4 and later, initialised channels only */
 
 #define PCAN_PARAMETER_OFF      0x00U

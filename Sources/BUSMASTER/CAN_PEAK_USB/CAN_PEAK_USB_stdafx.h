@@ -47,3 +47,8 @@
 #include <list>
 #include <iterator>
 #include <algorithm>
+
+/* Results of the controller dialog (ChangeRegisters.cpp, from the Kvaser driver) */
+const int INFO_RETAINED_CONFDATA    = 0;
+const int WARNING_NOTCONFIRMED      = -3;
+const int INFO_INIT_DATA_CONFIRMED  = 2;

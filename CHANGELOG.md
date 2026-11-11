@@ -20,10 +20,13 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   passive mode. CAN FD frames are not sent or shown yet.
 - Bus states (warning, error passive, bus off) reach the error handlers of the node simulation; PCAN-Basic has no
   error counters, so the counters shown stand for the state (96, 128, 255).
+- As with the former driver, the Hardware Selection dialog shows the firmware version and the PEAK device ID of
+  each interface, and *Advanced* opens *Configure CAN Controller*: bit timing (sample point, SJW), acceptance
+  filter for standard and extended frames, and *Blink* to find the interface by its LED.
 - If `PCANBasic.dll` or a PEAK interface is missing, a message says so when the driver is selected.
 - Time stamps are those of the PEAK hardware, in the time base of BUSMASTER.
 - Tested with a PCAN-USB and PCAN-Basic 5.1 on a 25 kbit/s test bus: reception, transmission of standard,
-  extended and remote frames, listen-only, connect and disconnect. Multi-channel interfaces and the Windows 7 build
+  extended and remote frames, listen-only, acceptance filter, connect and disconnect. Multi-channel interfaces and the Windows 7 build
   were not tried yet.
 
 ## 3.5.0 "Overdrive" - 2026-11-10
