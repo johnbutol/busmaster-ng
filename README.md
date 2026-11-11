@@ -91,7 +91,7 @@ The release notes, change log and read-me of the original BUSMASTER up to v3.2.x
   *Windows 7 build* (see below); a build made with the newest Visual C++ 2022 toolset runs on Windows 10 or later
   only.
 - On every Windows version the *Microsoft Visual C++ 2013 Redistributable (x86)* must be installed. The prebuilt
-  components inherited from BUSMASTER (`libxml2.dll`, `DBManager.dll`, the PEAK driver `CAN_PEAK_USB.dll`) are
+  components inherited from BUSMASTER (`libxml2.dll`, `DBManager.dll`) are
   built with that runtime. The installer adds it when it is missing; `BUSMASTER.exe` checks it at start-up and, if
   it is missing, says which package to install instead of the bare Windows error about `msvcr120.dll`.
 - The C++ / MFC 14.38 runtime is delivered next to the executable. The Universal CRT is part of Windows 10 and
@@ -157,9 +157,11 @@ Known build notes:
   with its SDK, which goes to `C:\Program Files\HMS\Ixxat VCI\sdk`. Without it that driver is skipped.
 - The post-build step of `BusEmulation` registers a COM server and needs an elevated (administrator) prompt.
 - LDF Editor and LDF Viewer additionally need Qt 5.
-- The PEAK driver (`CAN_PEAK_USB.dll`), `DBManager.dll`, `libxml2.dll` and the other vendor libraries in
-  `BIN\Release` are prebuilt binaries inherited from BUSMASTER 3.2.2 (the PEAK driver has no sources in the
-  repository), so they are not rebuilt with the new toolset.
+- `DBManager.dll`, `libxml2.dll` and the other vendor libraries in `BIN\Release` are prebuilt binaries inherited
+  from BUSMASTER 3.2.2, so they are not rebuilt with the new toolset.
+- The PEAK driver (`CAN_PEAK_USB`) is built from its sources on PCAN-Basic. It needs nothing from PEAK to build:
+  `PCANBasic.dll` is loaded at run time, from the folder of `BUSMASTER.exe` or from the PEAK device driver
+  installation.
 
 ### Release packages
 

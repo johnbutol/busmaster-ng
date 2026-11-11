@@ -78,7 +78,6 @@ the property of their owners.
 
   vxlapi.dll                    Vector Informatik GmbH
   canlib32.dll, linlib.dll      KVASER AB
-  CanApi2.dll                   PEAK-System Technik GmbH
   icsneo40.dll, ETASneo40.dll   Intrepid Control Systems, Inc.
   mhstcan.dll, mhsbmcfg.dll     MHS Elektronik GmbH & Co. KG
   vs_can_api.dll                Vision Systems GmbH (VScom)

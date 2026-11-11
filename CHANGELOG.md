@@ -8,6 +8,24 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**PEAK driver**
+- The *PEAK USB* driver is rewritten on PCAN-Basic (`PCANBasic.dll`), the free API that comes with the PEAK device
+  driver. It replaces the closed `CAN_PEAK_USB.dll` of BUSMASTER 3.2.2 and its `CanApi2.dll`, which are no longer
+  delivered; the driver is built from its sources like the other ones and no longer needs the Visual C++ 2013
+  runtime.
+- Every PEAK channel PCAN-Basic knows is listed (PCAN-USB, PCAN-USB Pro / FD, PCAN-PCI, PCAN-LAN, ...), up to 16
+  of them at the same time, in the same Hardware Selection dialog as the other drivers. A loaded configuration
+  selects its channels again without asking when they are all connected.
+- Classic CAN: 11 and 29 bit identifiers, remote frames, any bit rate from 5 kbit/s to 1 Mbit/s, listen-only in
+  passive mode. CAN FD frames are not sent or shown yet.
+- Bus states (warning, error passive, bus off) reach the error handlers of the node simulation; PCAN-Basic has no
+  error counters, so the counters shown stand for the state (96, 128, 255).
+- If `PCANBasic.dll` or a PEAK interface is missing, a message says so when the driver is selected.
+- Time stamps are those of the PEAK hardware, in the time base of BUSMASTER.
+- Tested with a PCAN-USB and PCAN-Basic 5.1 on a 25 kbit/s test bus: reception, transmission of standard,
+  extended and remote frames, listen-only, connect and disconnect. Multi-channel interfaces and the Windows 7 build
+  were not tried yet.
+
 ## 3.5.0 "Overdrive" - 2026-11-10
 
 Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that

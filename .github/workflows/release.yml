@@ -147,11 +147,13 @@ jobs:
             }
           }
           if (-not (Test-Path Sources\BUSMASTER\BIN\Release\CAN_IXXAT_VCI.dll)) { throw "CAN_IXXAT_VCI.dll was not built" }
+          if (-not (Test-Path Sources\BUSMASTER\BIN\Release\CAN_PEAK_USB.dll)) { throw "CAN_PEAK_USB.dll was not built" }
           exit 0
 
       - name: Build language DLLs and Format Converter
         run: |
-          # CAN_PEAK_USBJPN needs the PEAK driver sources, which are not in the repository: it fails and the rest goes on
+          # CAN_PEAK_USBJPN holds the Japanese dialogs of the former closed PEAK driver, whose headers are not in the
+          # repository (the PCAN-Basic driver does not use it): it fails and the rest goes on
           & $env:MSBUILD "Sources\BUSMASTER\Language Dlls\Language Dlls.sln" $env:MSBUILD_ARGS.Split(" ")
           "Language Dlls.sln exit code $LASTEXITCODE (CAN_PEAK_USBJPN is expected to fail)"
           if (-not (Test-Path Sources\BUSMASTER\BIN\Release\JPN\BUSMASTERJPN.dll)) { throw "Language DLLs build failed" }
