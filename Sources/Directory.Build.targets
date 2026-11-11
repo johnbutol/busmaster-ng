@@ -22,4 +22,11 @@
       <ResourceOutputFileName>$(IntDir)$(ProjectName)_BusmasterNGVersion.res</ResourceOutputFileName>
     </ResourceCompile>
   </ItemGroup>
+
+  <!-- Windows 7 build (see Directory.Build.props): no SSE2 instructions, for processors without SSE2 -->
+  <ItemDefinitionGroup Condition="'$(BusmasterWin7)' == 'true'">
+    <ClCompile>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+    </ClCompile>
+  </ItemDefinitionGroup>
 </Project>

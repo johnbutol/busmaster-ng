@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  BUSMASTER-NG: toolset of the Windows 7 build (MSBuild ... /p:BusmasterWin7=true), see Directory.Build.props.
+
+  Imported by Microsoft.Cpp.props through ForceImportBeforeCppProps, that is after the PlatformToolset of each project
+  (v143) and before the toolset is loaded, so it replaces it for every C++ project of the solutions.
+-->
+<Project>
+  <PropertyGroup>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+</Project>

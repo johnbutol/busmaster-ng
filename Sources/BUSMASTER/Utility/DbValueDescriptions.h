@@ -99,8 +99,14 @@ private:
     typedef std::map<std::string, sSIGNAL> SIGNALMAP;
     struct sDATABASE
     {
-        FILETIME m_sWriteTime = { 0, 0 };
+        FILETIME m_sWriteTime;
         std::map<unsigned int, SIGNALMAP> m_mapMessages;
+        // set in the constructor: the Visual Studio 2013 compiler of the Windows 7 build has no brace initializer here
+        sDATABASE()
+        {
+            m_sWriteTime.dwLowDateTime = 0;
+            m_sWriteTime.dwHighDateTime = 0;
+        }
     };
 
     CRITICAL_SECTION m_sLock;

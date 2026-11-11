@@ -2,23 +2,22 @@
 <!--
   BUSMASTER-NG: optional build for Windows 7.
 
-  The MSVC STL / runtime shipped with Visual Studio 2022 17.10 and later (toolset 14.4x) needs functions that
-  exist only from Windows 8 on (for example GetSystemTimePreciseAsFileTime), so binaries built with it do not
-  start on Windows 7. The last toolset that still supports Windows 7 is 14.38 (Visual Studio 2022 17.8).
+  The Windows 7 build also runs on processors without SSE2 (Pentium III, Athlon XP, some industrial PCs). The C++ /
+  MFC runtime of every v14x toolset (mfc140.dll, msvcp140.dll) is built by Microsoft with SSE2 instructions that are
+  used without checking the processor, so the Windows 7 build uses the Visual Studio 2013 toolset v120_xp instead,
+  with /arch:SSE (Directory.Build.targets), and ships the 120 runtime (msvcr120, msvcp120, mfc120) next to the exe.
 
   Default build (Windows 10 or later): nothing changes, the newest installed v143 toolset is used.
 
   Windows 7 build:  MSBuild ... /p:BusmasterWin7=true
-  Requires the Visual Studio 2022 components
-    "MSVC v143 - VS 2022 C++ x64/x86 build tools (v14.38-17.8)" and
-    "C++ ATL for v143 build tools (x86 & x64)" / "C++ MFC for v143 build tools (x86 & x64)" of the same 14.38 version.
+  Requires Visual Studio 2013 (or its C++ build tools) with the MFC MBCS library, installed beside Visual Studio 2022.
 
   Note: the output goes to the same BIN\Release folder as the default build, so do a clean build
   before packaging a Windows 7 version.
 -->
 <Project>
   <PropertyGroup Condition="'$(BusmasterWin7)' == 'true'">
-    <VCToolsVersion>14.38.33130</VCToolsVersion>
+    <ForceImportBeforeCppProps>$(MSBuildThisFileDirectory)BusmasterWin7.props</ForceImportBeforeCppProps>
   </PropertyGroup>
 
   <!--

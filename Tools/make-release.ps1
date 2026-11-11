@@ -1,8 +1,8 @@
 <#
   BUSMASTER-NG: builds the release packages from a finished build in Sources\BUSMASTER\BIN\Release.
 
-  The build is the Windows 7 compatible one (toolset 14.38, see Sources\Directory.Build.props). From it this script
-  makes:
+  The build is the Windows 7 compatible one (Visual Studio 2013 toolset without SSE2, see Sources\Directory.Build.props;
+  the runtime copied next to the executable follows the one BUSMASTER.exe imports). From it this script makes:
     BUSMASTER-NG_<v>_win32.zip        portable, Windows 10 / 11
     BUSMASTER-NG_<v>_win32_win7.zip   portable, Windows 7 SP1: the same files plus the Universal CRT (ucrtbase.dll and
                                       the api-ms-win-*.dll forwarders). Windows 10 and later always use their own
@@ -57,11 +57,23 @@ robocopy $bin $stage /E /NJH /NJS /NDL /NFL /NP /XF *.pdb *.ilk *.exp *.lib *.pc
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
 
 # 2. C++ / MFC runtime of the toolset next to the executable; the Universal CRT apart, for Windows 7 only
-$vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
-$redist = Join-Path $vs "VC\Redist\MSVC\$VCToolsVersion\x86"
-foreach ($sub in "Microsoft.VC143.CRT", "Microsoft.VC143.MFC") {
+# The Windows 7 build (Visual Studio 2013 toolset, see Sources\Directory.Build.props) uses the 120 runtime, the default
+# build the one of Visual Studio 2022: BUSMASTER.exe imports mfc120.dll or mfc140.dll.
+$exeText = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes((Join-Path $bin "BUSMASTER.exe")))
+if ($exeText -match "(?i)mfc120\.dll") {
+    Write-Host "Visual Studio 2013 build: 120 runtime"
+    $redist = "${env:ProgramFiles(x86)}\Microsoft Visual Studio 12.0\VC\redist\x86"
+    $runtimeDirs = "Microsoft.VC120.CRT", "Microsoft.VC120.MFC"
+}
+else {
+    # Visual Studio 2022 (version 17), the one the build uses: a newer Visual Studio installed beside it has other runtimes
+    $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -version "[17.0,18.0)" -property installationPath
+    $redist = Join-Path $vs "VC\Redist\MSVC\$VCToolsVersion\x86"
+    $runtimeDirs = "Microsoft.VC143.CRT", "Microsoft.VC143.MFC"
+}
+foreach ($sub in $runtimeDirs) {
     $dir = Join-Path $redist $sub
-    if (-not (Test-Path $dir)) { throw "Runtime not found: $dir (install the MSVC $VCToolsVersion build tools)" }
+    if (-not (Test-Path $dir)) { throw "Runtime not found: $dir" }
     Copy-Item "$dir\*.dll" $stage
 }
 $ucrt = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\*\ucrt\DLLs\x86" -Directory | Sort-Object FullName | Select-Object -Last 1

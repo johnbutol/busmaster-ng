@@ -94,8 +94,8 @@ The release notes, change log and read-me of the original BUSMASTER up to v3.2.x
   components inherited from BUSMASTER (`libxml2.dll`, `DBManager.dll`) are
   built with that runtime. The installer adds it when it is missing; `BUSMASTER.exe` checks it at start-up and, if
   it is missing, says which package to install instead of the bare Windows error about `msvcr120.dll`.
-- The C++ / MFC 14.38 runtime is delivered next to the executable. The Universal CRT is part of Windows 10 and
-  later; for Windows 7 it is in the `_win7` zip and the installer copies it only there.
+- The C++ / MFC runtime of the build is delivered next to the executable (Visual C++ 2013 for the Windows 7 build,
+  see below).
 - The vendor driver of your CAN / LIN interface (PEAK, Vector, Kvaser, ETAS, ...), installed separately.
 
 ## Building
@@ -111,19 +111,27 @@ The output is written to `Sources\BUSMASTER\BIN\Release`.
 
 ### Windows 7 build
 
-The Visual Studio 2022 runtime from toolset 14.40 on needs Windows 8 or later (for example the C++ standard library
-imports `GetSystemTimePreciseAsFileTime` and `CreateFile2`). For Windows 7 build with the older 14.38 toolset
-(Visual Studio 2022 17.8), selected by a switch in `Sources\Directory.Build.props`.
+The Windows 7 build also runs on processors **without SSE2** (Pentium III, Athlon XP, some industrial PCs). The C++ /
+MFC runtime of every Visual Studio 2022 toolset (`mfc140.dll`, `msvcp140.dll`) contains SSE2 instructions used
+without checking the processor, so the switch `/p:BusmasterWin7=true` builds every C++ project with the Visual
+Studio 2013 toolset `v120_xp` and `/arch:SSE` instead (`Sources\Directory.Build.props`, `Sources\BusmasterWin7.props`,
+`Sources\Directory.Build.targets`). The program then uses the Visual C++ 2013 runtime (`msvcr120`, `msvcp120`,
+`mfc120`), the same as the prebuilt `DBManager.dll`.
 
-Requirements on the build PC: the Visual Studio components *MSVC v143 ... (v14.38-17.8)* and the matching
-*C++ ATL* and *C++ MFC* (v14.38) build tools.
+Requirements on the build PC: Visual Studio 2013 (or its C++ build tools) with the MFC MBCS library, installed beside
+Visual Studio 2022, which runs the build.
 
 1. Clean build with the switch (the toolset changes, so objects of the default build cannot be reused):
 
    ```
-   MSBuild Sources\Kernel\BusmasterKernel.sln       /t:Rebuild /p:Configuration=Release /p:BusmasterWin7=true
-   MSBuild Sources\BUSMASTER\BUSMASTER.sln          /t:Rebuild /p:Configuration=Release /p:BusmasterWin7=true
+   MSBuild Sources\Kernel\BusmasterKernel.sln                       /t:Rebuild /p:Configuration=Release /p:BusmasterWin7=true
+   MSBuild Sources\BUSMASTER\BUSMASTER.sln                          /t:Rebuild /p:Configuration=Release /p:BusmasterWin7=true
+   MSBuild "Sources\BUSMASTER\Format Converter\FormatConverter.sln" /t:Build   /p:Configuration=Release /p:BusmasterWin7=true
    ```
+
+   The Format Converter needs its flex / bison files generated first, as in the release workflow (a Rebuild deletes
+   them). `Sources\BUSMASTER\BIN\Release\libxml2.dll` is libxml2 2.9.4 built the same way by
+   `Tools\build-libxml2.bat` (sources and checksum in the script).
 
    `BusEmulation` (COM registration needs an administrator prompt) and `CAN_IXXAT_VCI` (vendor SDK) may fail; if
    `BUSMASTER.exe` was skipped because of that, build the project alone with
@@ -136,17 +144,17 @@ Requirements on the build PC: the Visual Studio components *MSVC v143 ... (v14.3
 
 2. Assemble a self-contained folder (the output of step 1 is in `Sources\BUSMASTER\BIN\Release`).
    `Tools\make-release.ps1` does this step for you (see [Release packages](#release-packages)); by hand: copy that folder,
-   without the intermediate files (`*.pch`, `*.ilk`, `*.pdb`, `*.exp`, `*.lib`), and add next to `BUSMASTER.exe`:
-   - `msvcp140.dll`, `vcruntime140.dll`, `concrt140.dll` from `VC\Redist\MSVC\14.38.33130\x86\Microsoft.VC143.CRT`;
-   - `mfc140.dll`, `mfc140u.dll`, `mfcm140.dll`, `mfcm140u.dll` from `...\Microsoft.VC143.MFC`;
-   - all DLLs of `C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x86` (the Universal CRT for
-     application-local deployment, with `ucrtbase.dll` and the `api-ms-win-*` files).
+   without the intermediate files (`*.pch`, `*.ilk`, `*.pdb`, `*.exp`, `*.lib`), and add next to `BUSMASTER.exe` the
+   DLLs of `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\redist\x86\Microsoft.VC120.CRT` and
+   `...\Microsoft.VC120.MFC`.
 
-3. On the Windows 7 PC install Windows 7 SP1 and the Visual C++ 2013 Redistributable (x86), then run the folder.
+3. On the Windows 7 PC install Windows 7 SP1, then run the folder.
 
-The result is checked with `dumpbin /imports`: none of the 36 compiled binaries, nor the 14.38 C++ / MFC runtime,
-imports a function that is missing on Windows 7. On a clean Windows 7 PC the 3.4.1 package starts and the
-Simulation driver connects and sends messages; the other functions are not tested there yet.
+Checked with Intel SDE emulating a Pentium III (SSE, no SSE2): start-up, *Load DBC*, Simulation driver with replay
+and interpreted Message Window, and the PEAK driver receiving on a real bus run without SSE2 instructions (the
+reports left are `lahf`, valid on every 32-bit x86, and the runtime's `__ftol2`, which checks the processor first).
+`DBManager.dll` (closed binary) contains SSE2 code that was not reached in these tests; the vendor libraries of the
+other interfaces are not checked. Not tested yet on a real PC without SSE2.
 The default build and the Windows 7 build write to the same `BIN\Release` folder: do a clean build whenever you
 switch between them.
 

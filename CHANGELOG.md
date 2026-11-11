@@ -8,6 +8,12 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**Processors without SSE2**
+- The Windows 7 build runs on processors without SSE2 (Pentium III, Athlon XP, some industrial PCs): it is built
+  with the Visual Studio 2013 toolset and `/arch:SSE`, with the Visual C++ 2013 runtime next to the executable, and
+  `libxml2.dll` is rebuilt the same way. Checked with an emulated Pentium III (Intel SDE); not tested yet on a real
+  PC without SSE2.
+
 **PEAK driver**
 - The *PEAK USB* driver is rewritten on PCAN-Basic (`PCANBasic.dll`), the free API that comes with the PEAK device
   driver. It replaces the closed `CAN_PEAK_USB.dll` of BUSMASTER 3.2.2 and its `CanApi2.dll`, which are no longer
