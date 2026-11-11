@@ -11,8 +11,10 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 **Processors without SSE2**
 - The Windows 7 build runs on processors without SSE2 (Pentium III, Athlon XP, some industrial PCs): it is built
   with the Visual Studio 2013 toolset and `/arch:SSE`, with the Visual C++ 2013 runtime next to the executable, and
-  `libxml2.dll` is rebuilt the same way. Checked with an emulated Pentium III (Intel SDE); not tested yet on a real
-  PC without SSE2.
+  `libxml2.dll` is rebuilt the same way. Checked with an emulated Pentium III (Intel SDE) and on a real Pentium III
+  with Windows 7: the program and the PEAK driver start.
+- Node simulation on such a PC needs a MinGW whose own programs are built without SSE2: TDM-GCC 4.8.1, the one
+  offered by the setup of BUSMASTER 3.2.2, compiles and runs the nodes; a current MinGW (WinLibs GCC 16.2) crashes.
 
 **PEAK driver**
 - The *PEAK USB* driver is rewritten on PCAN-Basic (`PCANBasic.dll`), the free API that comes with the PEAK device

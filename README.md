@@ -154,7 +154,13 @@ Checked with Intel SDE emulating a Pentium III (SSE, no SSE2): start-up, *Load D
 and interpreted Message Window, and the PEAK driver receiving on a real bus run without SSE2 instructions (the
 reports left are `lahf`, valid on every 32-bit x86, and the runtime's `__ftol2`, which checks the processor first).
 `DBManager.dll` (closed binary) contains SSE2 code that was not reached in these tests; the vendor libraries of the
-other interfaces are not checked. Not tested yet on a real PC without SSE2.
+other interfaces are not checked.
+
+Tested on a real Pentium III with Windows 7: BUSMASTER-NG and the PEAK driver start, node simulation compiles and
+runs with TDM-GCC 4.8.1 (the MinGW offered by the setup of BUSMASTER 3.2.2: gcc-4.8.1-tdm-1, binutils 2.23.1,
+mingwrt / w32api 4.0.3, mingw32-make 3.82.90). A current MinGW such as WinLibs GCC 16.2 does **not** run on such a
+processor: its own programs (`gcc.exe`, `cc1plus.exe`, `as.exe`, `ld.exe`, `libstdc++-6.dll`, ...) are built with
+SSE2 and crash, although the code they generate has no SSE2 (32-bit GCC defaults to x87).
 The default build and the Windows 7 build write to the same `BIN\Release` folder: do a clean build whenever you
 switch between them.
 
