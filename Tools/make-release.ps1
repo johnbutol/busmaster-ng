@@ -53,7 +53,8 @@ foreach ($dir in $stage, $stage7, $ucrtStage) { if (Test-Path $dir) { Remove-Ite
 
 # 1. the build, without build by-products
 Write-Host "Copying the build"
-robocopy $bin $stage /E /NJH /NJS /NDL /NFL /NP /XF *.pdb *.ilk *.exp *.lib *.pch *.map *.iobj *.ipdb *.recipe *.log *.tlog *.chw *.idb *.obj | Out-Null
+# (a MinGW folder kept next to BUSMASTER.exe for local tests is left out: users install their own, see the README)
+robocopy $bin $stage /E /NJH /NJS /NDL /NFL /NP /XD (Join-Path $bin "MinGw") /XF *.pdb *.ilk *.exp *.lib *.pch *.map *.iobj *.ipdb *.recipe *.log *.tlog *.chw *.idb *.obj | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
 
 # 2. C++ / MFC runtime of the toolset next to the executable; the Universal CRT apart, for Windows 7 only
