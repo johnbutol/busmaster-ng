@@ -140,6 +140,7 @@ struct SPeakHwChannel
     std::string m_omBaseName;       // "PCAN-USB 1"
     std::string m_omDescription;    // shown in the dialog and saved in the configuration
     std::string m_omDetails;        // shown as "Firmware" in the dialog
+    unsigned long m_dwDeviceId;     // shown as "Driver ID" in the dialog
 };
 
 static SPeakHwChannel sg_asAvailable[defNO_OF_CHANNELS];
@@ -489,16 +490,32 @@ static void vAddIfPresent(TPCANHandle hHandle, const char* pcType, int nNumber)
     // The dialog uses the description as a format string
     std::replace(sChannel.m_omDescription.begin(), sChannel.m_omDescription.end(), '%', ' ');
 
-    sChannel.m_omDetails.clear();
+    // "Driver ID" of the dialog: the device ID set with PCAN-View, which tells two interfaces apart
     DWORD dwDeviceId = 0;
-    if (pfCAN_GetValue(hHandle, PCAN_DEVICE_ID, &dwDeviceId, sizeof(dwDeviceId)) == PCAN_ERROR_OK)
+    sChannel.m_dwDeviceId = (pfCAN_GetValue(hHandle, PCAN_DEVICE_ID, &dwDeviceId, sizeof(dwDeviceId)) == PCAN_ERROR_OK) ? dwDeviceId : 0;
+
+    // "Firmware" of the dialog. PCAN-Basic gives it for an initialised channel only: a channel that no other
+    // application uses is opened for a moment in listen-only mode, which never drives the bus.
+    sChannel.m_omDetails.clear();
+    if (dwCondition == PCAN_CHANNEL_AVAILABLE)
     {
-        sprintf_s(acText, sizeof(acText), "Device ID %lu", dwDeviceId);
-        sChannel.m_omDetails = acText;
+        DWORD dwOn = PCAN_PARAMETER_ON;
+        DWORD dwOff = PCAN_PARAMETER_OFF;
+        pfCAN_SetValue(hHandle, PCAN_LISTEN_ONLY, &dwOn, sizeof(dwOn));
+        if (pfCAN_Initialize(hHandle, PCAN_BAUD_500K, 0, 0, 0) == PCAN_ERROR_OK)
+        {
+            char acFirmware[MAX_LENGTH_VERSION_STRING] = { 0 };
+            if (pfCAN_GetValue(hHandle, PCAN_FIRMWARE_VERSION, acFirmware, sizeof(acFirmware)) == PCAN_ERROR_OK)
+            {
+                sChannel.m_omDetails = acFirmware;
+            }
+            pfCAN_Uninitialize(hHandle);
+        }
+        pfCAN_SetValue(hHandle, PCAN_LISTEN_ONLY, &dwOff, sizeof(dwOff));
     }
-    if ((dwCondition & PCAN_CHANNEL_AVAILABLE) == 0)
+    else if ((dwCondition & PCAN_CHANNEL_AVAILABLE) == 0)
     {
-        sChannel.m_omDetails += sChannel.m_omDetails.empty() ? "In use by another application" : ", in use by another application";
+        sChannel.m_omDetails = "In use by another application";
     }
 }
 
@@ -945,7 +962,7 @@ HRESULT CDIL_CAN_PEAK_USB::CAN_ListHwInterfaces(INTERFACE_HW_LIST& asSelHwInterf
         INTERFACE_HW asHwInterface[defNO_OF_CHANNELS];
         for (int i = 0; i < sg_nAvailable; i++)
         {
-            asHwInterface[i].m_dwIdInterface = (unsigned long)i;
+            asHwInterface[i].m_dwIdInterface = sg_asAvailable[i].m_dwDeviceId;   // only shown by the dialog
             asHwInterface[i].m_dwVendor = 0;
             asHwInterface[i].m_bytNetworkID = 0;
             asHwInterface[i].m_acNameInterface = sg_asAvailable[i].m_omDescription;
