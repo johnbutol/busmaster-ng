@@ -6095,7 +6095,17 @@ void CMainFrame::OnFileConnect()
                 else
                 {
                     ouWaitIndicator.SetWindowText(_("Failed to connect the hardware... "));
-                    theApp.bWriteIntoTraceWnd(_("Failed to start the hardware"));
+                    // BUSMASTER-NG: add the reason given by the driver, when it gives one
+                    std::string omDriverError;
+                    if ((g_pouDIL_CAN_Interface->DILC_GetLastErrorString(omDriverError) == S_OK) && !omDriverError.empty())
+                    {
+                        CString omTrace = CString(_("Failed to start the hardware")) + ": " + omDriverError.c_str();
+                        theApp.bWriteIntoTraceWnd(omTrace.GetBuffer(0));
+                    }
+                    else
+                    {
+                        theApp.bWriteIntoTraceWnd(_("Failed to start the hardware"));
+                    }
                 }
             }
             // Commented to avoid Timedelay in log file
