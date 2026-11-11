@@ -166,8 +166,8 @@ From this build `Tools\make-release.ps1` makes one portable zip for Windows 7 SP
 Visual C++ 2013 runtime next to the executable is all it needs) and, with `-Installer`, a setup without runtimes to
 install. Make it with **Inno Setup 6.2.2** (https://github.com/jrsoftware/issrc/releases/tag/is-6_2_2): the setup
 made by Inno Setup 6.7.3 does not run on a processor without SSE2, its own code (the `Move` routine of the Delphi
-runtime) uses SSE2 without checking the processor. Setup and uninstaller of Inno Setup 6.2.2 checked with Intel SDE
-(Pentium III); `Tools\installer.iss` stops with an error when a newer Inno Setup compiles the Windows 7 build.
+runtime) uses SSE2 without checking the processor. The setup made with Inno Setup 6.2.2 is checked with Intel SDE
+(Pentium III, setup and uninstaller) and installs on a real Pentium III with Windows 7; `Tools\installer.iss` stops with an error when a newer Inno Setup compiles the Windows 7 build.
 The default build and the Windows 7 build write to the same `BIN\Release` folder: do a clean build whenever you
 switch between them.
 

@@ -13,6 +13,9 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   with the Visual Studio 2013 toolset and `/arch:SSE`, with the Visual C++ 2013 runtime next to the executable, and
   `libxml2.dll` is rebuilt the same way. Checked with an emulated Pentium III (Intel SDE) and on a real Pentium III
   with Windows 7: the program and the PEAK driver start.
+- For this build the release script makes one portable zip for Windows 7 SP1, 10 and 11 and a setup that installs
+  no runtime; the setup is made with Inno Setup 6.2.2, as the setup of newer versions needs SSE2 itself. Tested on
+  the Pentium III.
 - Node simulation on such a PC needs a MinGW whose own programs are built without SSE2: TDM-GCC 4.8.1, the one
   offered by the setup of BUSMASTER 3.2.2, compiles and runs the nodes; a current MinGW (WinLibs GCC 16.2) crashes.
 
