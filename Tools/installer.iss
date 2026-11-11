@@ -6,10 +6,17 @@
 ;                (Visual Studio 2013 toolset) does not use the Universal CRT and has its runtime in StageDir
 ;   OutDir       where BUSMASTER-NG_<version>_setup.exe is written
 ;   IconFile     BUSMASTER.ico
+;   Win7Build    set for the Windows 7 build (Visual Studio 2013 toolset), which runs on processors without SSE2
 ;   VCRedist2013 (optional) vcredist_x86.exe of Visual C++ 2013, run only when the runtime is missing
 
 #ifndef AppVersion
   #error Run make-release.ps1 -Installer instead of compiling this script directly
+#endif
+
+; the Windows 7 build runs on processors without SSE2, so must its setup: the setup of Inno Setup 6.7.3 executes SSE2
+; code without checking the processor (Move routine of its Delphi runtime), the one of Inno Setup 6.2.2 does not
+#if defined(Win7Build) && Ver > EncodeVer(6, 2, 2)
+  #error Use Inno Setup 6.2.2 for the Windows 7 build: the setup of newer versions needs a processor with SSE2
 #endif
 
 [Setup]

@@ -165,7 +165,9 @@ if ($Installer) {
     $fileVersion = [regex]::Match($Version, '^\d+(\.\d+){0,3}').Value
     $defines = @("/DAppVersion=$Version", "/DFileVersion=$fileVersion", "/DStageDir=$stage", "/DOutDir=$OutDir",
                  "/DIconFile=$(Join-Path $app 'Res\BUSMASTER.ico')")
-    if (-not $win7Build) {
+    # Win7Build: installer.iss refuses an Inno Setup whose setup needs SSE2
+    if ($win7Build) { $defines += "/DWin7Build" }
+    else {
         $defines += "/DUcrtDir=$ucrtStage"
         $defaultRedist = Join-Path $PSScriptRoot "redist\vcredist2013_x86.exe"
         if ($VCRedist2013 -eq "" -and (Test-Path $defaultRedist)) { $VCRedist2013 = $defaultRedist }
