@@ -72,6 +72,10 @@ The release notes, change log and read-me of the original BUSMASTER up to v3.2.x
 - The release packages are built on **GitHub Actions** from the tagged sources, the **IXXAT VCI** driver included.
 - The Message window and Signal Watch show the **value descriptions** of CAN signals again
   (`Position control` instead of `3`), lost since BUSMASTER 3.0.
+- **Ethernet** (new tab of the ribbon): capture of the frames of a network adapter with a decoded message window
+  (VLAN, IPv4 / IPv6, UDP / TCP, ARP, SOME/IP, DoIP, PTP, AVTP, LLDP), export to pcap for Wireshark, and a
+  transmit window for raw Ethernet frames and UDP datagrams, once or cyclically. It needs
+  [Npcap](https://npcap.com); see the [CHANGELOG](CHANGELOG.md) for what it does and does not do yet.
 
 ## Known limitations
 
@@ -97,6 +101,8 @@ The release notes, change log and read-me of the original BUSMASTER up to v3.2.x
 - The C++ / MFC 14.38 runtime is delivered next to the executable. The Universal CRT is part of Windows 10 and
   later; for Windows 7 it is in the `_win7` zip and the installer copies it only there.
 - The vendor driver of your CAN / LIN interface (PEAK, Vector, Kvaser, ETAS, ...), installed separately.
+- For Ethernet: [Npcap](https://npcap.com) (or WinPcap 4.1.3), installed separately. It is not in the packages:
+  its licence does not allow redistributing it.
 
 ## Building
 

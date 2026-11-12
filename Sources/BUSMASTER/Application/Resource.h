@@ -1195,6 +1195,18 @@
 #define ID_CHECK2                       40080
 #define IDM_UDS                         40100
 #define IDD_SETTINGS_UDS                40101
+#define IDM_ETH_CONNECT                 40130
+#define IDM_ETH_ADAPTER                 40131
+#define IDM_ETH_MSG_WINDOW              40132
+#define IDM_ETH_TX_WINDOW               40133
+#define IDM_ETH_CLEAR                   40134
+#define IDM_ETH_SYSTEM_TIME             40135
+#define IDM_ETH_ABSOLUTE_TIME           40136
+#define IDM_ETH_RELATIVE_TIME           40137
+#define IDM_ETH_OVERWRITE               40138
+#define IDM_ETH_SHOW_LAST               40139
+#define IDM_ETH_PAUSE                   40140
+#define IDM_ETH_SAVE_PCAP               40141
 #define ID_RIBBON_HIDE                  40105
 #define ID_ACCELERATOR40109             40109
 #define ID_BUTTON_TOGGLERIBBON          40111
@@ -1257,7 +1269,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        149
-#define _APS_NEXT_COMMAND_VALUE         40115
+#define _APS_NEXT_COMMAND_VALUE         40142
 #define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           122
 #endif

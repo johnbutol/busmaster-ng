@@ -42,6 +42,8 @@
 // UDS Protocol
 //#include "DIL_Interface/DILI_UDS_Protocol.h"
 #include "UDS_Protocol/UDS_Extern.h"
+// Ethernet
+#include "Ethernet/Ethernet_Extern.h"
 
 // For getting name of a permanent exported function from the user-defined DLL.
 #include "MessageList.h"
@@ -301,6 +303,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWndEx)
     //UDS
     ON_COMMAND(IDM_UDS,OnCfgnUdsMainWnd)
     ON_COMMAND(IDD_SETTINGS_UDS,OnCfgnUdsSettingsWnd)
+    ON_COMMAND_RANGE(IDM_ETH_CONNECT, IDM_ETH_SAVE_PCAP, OnEthernetCommand)
+    ON_UPDATE_COMMAND_UI_RANGE(IDM_ETH_CONNECT, IDM_ETH_SAVE_PCAP, OnUpdateEthernetCommand)
     ON_WM_SHOWWINDOW()
     ON_WM_DESTROY()
     ON_UPDATE_COMMAND_UI(ID_FILE_NEW, OnUpdateFileNew)
@@ -3797,6 +3801,9 @@ void CMainFrame::OnClose()
         // Update Status bar
 		m_wndStatusBar.SetPaneIcon(INDEX_J1939_LOG_ICON, m_hLogOffIcon);
     }
+    // Ethernet: stop the capture and close its windows
+    Ethernet_Shutdown();
+
 	//now unloadplugins;
 	mPluginManager->unLoadPlugins();
 
@@ -7889,6 +7896,60 @@ void CMainFrame::OnCfgnUdsMainWnd()
 void CMainFrame::OnCfgnUdsSettingsWnd()
 {
     HRESULT hola = DIL_UDS_ShowSettingWnd(this->m_hWnd);
+}
+
+/**
+ * Commands of the Ethernet tab of the ribbon: the IDs IDM_ETH_CONNECT to IDM_ETH_SAVE_PCAP follow the order of
+ * EEthernetCommand (Ethernet.dll)
+ */
+void CMainFrame::OnEthernetCommand(UINT nID)
+{
+    Ethernet_Command(m_hWnd, (int)(nID - IDM_ETH_CONNECT));
+}
+
+void CMainFrame::OnUpdateEthernetCommand(CCmdUI* pCmdUI)
+{
+    const int nState = Ethernet_GetCommandState((int)(pCmdUI->m_nID - IDM_ETH_CONNECT));
+    const bool bChecked = (nState & ETH_STATE_CHECKED) != 0;
+    pCmdUI->Enable((nState & ETH_STATE_ENABLED) != 0);
+    switch (pCmdUI->m_nID)
+    {
+        case IDM_ETH_CONNECT:
+        {
+            /* the Connect button shows the state, as those of CAN and LIN; the capture may stop by itself */
+            static bool s_bShownConnected = false;
+            if (bChecked != s_bShownConnected)
+            {
+                s_bShownConnected = bChecked;
+                vSetEthernetConnectButton(bChecked);
+            }
+            break;
+        }
+        case IDM_ETH_ADAPTER:
+        case IDM_ETH_CLEAR:
+        case IDM_ETH_SAVE_PCAP:
+            break;
+        default:
+            pCmdUI->SetCheck(bChecked ? 1 : 0);
+            break;
+    }
+}
+
+void CMainFrame::vSetEthernetConnectButton(bool bConnected)
+{
+    CMFCRibbonPanel* pPanel = GetRibbonPanel(GetCategory("Ethernet"), "Hardware Configuration");
+    if (pPanel == nullptr || pPanel->GetCount() == 0)
+    {
+        return;
+    }
+    CMFCRibbonButton* pButton = static_cast<CMFCRibbonButton*>(pPanel->GetElement(0));
+    CString omText;
+    /* same images and texts as setConnectState */
+    pButton->SetImageIndex(bConnected ? 11 : 0, TRUE);
+    pButton->SetImageIndex(bConnected ? 3 : 2, FALSE);
+    omText.LoadString(bConnected ? IDS_DISCONNECT : IDS_CONNECT);
+    pButton->SetText((LPCSTR)omText);
+    mRibbonBar.ForceRecalcLayout();
 }
 /******************************************************************************/
 /*  Function Name    :  OnUpdateConfigureBaudrate                             */

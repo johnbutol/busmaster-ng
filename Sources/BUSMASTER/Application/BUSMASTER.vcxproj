@@ -1170,6 +1170,9 @@ copy ".\Res\Splsh16.bmp" "$(SolutionDir)\bin\$(OutDir)Splsh16.bmp"
       <Project>{f09ae645-8a52-4744-9a37-baaeb85d2848}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\Ethernet\Ethernet.vcxproj">
+      <Project>{c768ed58-cc8a-40ee-bf06-7a778e9ace03}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\UDS_Protocol\UDS_Protocol.vcxproj">
       <Project>{3f0ef2e6-3377-4f4e-872d-5366529cd038}</Project>
     </ProjectReference>

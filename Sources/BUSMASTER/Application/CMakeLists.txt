@@ -222,6 +222,7 @@ target_link_libraries(BUSMASTER
   Winmm shlwapi htmlhelp psapi
   CommonClass
   DataTypes
+  Ethernet
   Utils
   DIL_Interface
   Filter

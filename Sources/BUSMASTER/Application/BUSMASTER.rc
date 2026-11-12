@@ -1958,6 +1958,18 @@ STRINGTABLE
 BEGIN
     IDM_UDS                 "Configure Diagnostic messages for Transmission and Reception\nTransmit Window"
     IDD_SETTINGS_UDS        "Configure settings for Diagnostic Message Transmission and Reception\nSettings"
+    IDM_ETH_CONNECT         "Start or stop the capture of Ethernet frames on the selected network adapter (needs Npcap)\nConnect"
+    IDM_ETH_ADAPTER         "Select the network adapter, the promiscuous mode and the capture filter\nAdapter Selection"
+    IDM_ETH_MSG_WINDOW      "Show or hide the Ethernet message window\nActivate"
+    IDM_ETH_TX_WINDOW       "Show or hide the Ethernet transmit window: raw Ethernet frames and UDP datagrams, sent once or cyclically\nTransmit Window"
+    IDM_ETH_CLEAR           "Clear the Ethernet message window\nClear"
+    IDM_ETH_SYSTEM_TIME     "Show the time of day of the frames\nSystem Time"
+    IDM_ETH_ABSOLUTE_TIME   "Show the time of the frames since the connection\nAbsolute Time"
+    IDM_ETH_RELATIVE_TIME   "Show the time since the previous frame (the previous one of the same kind in overwrite mode)\nRelative Time"
+    IDM_ETH_OVERWRITE       "One row per kind of frame (addresses, protocol, ports), updated with the last one\nOverwrite"
+    IDM_ETH_SHOW_LAST       "Scroll the Ethernet message window to the newest frame\nShow Last"
+    IDM_ETH_PAUSE           "Stop taking new frames in the Ethernet message window\nPause"
+    IDM_ETH_SAVE_PCAP       "Save the frames of the Ethernet message window in a pcap file, which Wireshark opens\nSave as pcap"
 END
 
 #endif    // English (United States) resources

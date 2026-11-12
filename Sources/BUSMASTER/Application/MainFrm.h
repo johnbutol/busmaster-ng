@@ -478,6 +478,10 @@ protected:
     //UDS
     afx_msg void OnCfgnUdsMainWnd();
     afx_msg void OnCfgnUdsSettingsWnd();
+    //Ethernet
+    afx_msg void OnEthernetCommand(UINT nID);
+    afx_msg void OnUpdateEthernetCommand(CCmdUI* pCmdUI);
+    void vSetEthernetConnectButton(bool bConnected);
     afx_msg void OnAutomationTSEditor();
     afx_msg void OnAutomationTSExecutor();
 

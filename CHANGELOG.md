@@ -8,6 +8,26 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**Ethernet** (new tab of the ribbon)
+- Capture and transmission of Ethernet frames on a network adapter of the PC, through Npcap
+  (https://npcap.com, to install separately; WinPcap 4.1.3 also works). BUSMASTER-NG starts without it and says
+  what is missing when Ethernet is used.
+- *Adapter Selection*: the network adapters with their Windows names, MAC and IPv4 addresses; promiscuous mode and
+  a capture filter in pcap syntax (for example `ether proto 0x88f7` or `not tcp port 3389`).
+- *Message Window*: time, Tx/Rx (frames sent by this PC in blue), MAC addresses, VLAN, protocol, IP addresses and
+  ports, length, a short description and the data. Decoded: VLAN tags, IPv4 / IPv6, UDP, TCP, ICMP, ARP, and
+  SOME/IP, SOME/IP-SD, DoIP, PTP / gPTP, AVTP, LLDP, STP. As the CAN message window: system, absolute and relative
+  time, overwrite mode (one row per kind of frame), Show Last, Pause, Clear; Copy, and copy of whole frames in hex.
+  *Save as pcap* writes the frames in a file Wireshark opens.
+- *Transmit Window*: raw Ethernet frames (any EtherType) and UDP datagrams over IPv4, with an optional VLAN tag,
+  sent with *Send* or cyclically while connected (check the frame in the list). The source MAC and IP addresses are
+  those of the adapter unless given. The frames are kept for the next session.
+- The idea comes from pull request 742 of the original project (Ethernet support by RBEI-AshwinRU, never merged);
+  the code is new, made for BUSMASTER 3.x as a separate module (`Ethernet.dll`). Ethernet frames are not part of
+  logging, replay, node simulation or the configuration files yet.
+- Tested with Npcap 1.88 on a virtual adapter (VirtualBox host-only): capture, sending once and every 100 ms,
+  overwrite mode, pcap file, connect and disconnect. Not tested yet on an automotive Ethernet network.
+
 ## 3.5.0 "Overdrive" - 2026-11-10
 
 Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that
