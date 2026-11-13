@@ -29,7 +29,8 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
     all received in order and without bus errors; in BUSMASTER-NG, hardware selection, connection, reception
     on both channels and sending from the Transmit window. Not tested yet: listen only mode, several boards.
   - CAN FD is tested with the self test only (every frame length, with and without bit rate switch, at 125 k / 500 k,
-    500 k / 2 M and 1 M / 4 M bit/s) and, for the arbitration bit rate, with classic frames on the 25 kbit/s bus.
+    500 k / 2 M and 1 M / 4 M bit/s; in BUSMASTER-NG a 64 byte *Std FD* frame sent from the Transmit window and
+    shown as sent and received) and, for the arbitration bit rate, with classic frames on the 25 kbit/s bus.
     **Not tested against another CAN FD node**: there was none.
 
 **Transmit window**
