@@ -6,7 +6,8 @@ Needs pyserial (pip install pyserial).
     python bmt_test.py                 information of the board, status of both channels
     python bmt_test.py --loop          the two CAN ports wired together (CANH-CANH, CANL-CANL,
                                        both terminations on): frames sent on one channel must
-                                       arrive on the other, in both directions
+                                       arrive on the other, in both directions. If other nodes
+                                       are on that bus, give their bit rate with --bitrate
     python bmt_test.py --listen 10     prints what both channels receive for 10 seconds
     options: --port COM7   --bitrate 500000
 
@@ -144,16 +145,22 @@ def loop_test(board, bitrate):
         data = bytes((index + k) & 0xFF for k in range(index % 9))
         board.transmit(channel, can_id, data, extended)
         sent.append((channel, can_id, extended, data))
-    echoes, received, errors = [], [], 0
-    for kind, payload in board.packets(2.0):
+    echoes, received, errors, foreign = [], [], 0, 0
+    known = set((i, e) for _, i, e, _ in sent)
+    # 200 frames of at most 160 bits, and time for the frames of other nodes on the bus
+    for kind, payload in board.packets(1.0 + 200 * 160 * 2.0 / bitrate):
         if kind == MSG_FRAME:
             channel, flags, _, can_id, dlc, data = decode_frame(payload)
             entry = (channel, can_id, bool(flags & FRAME_EXTENDED), data)
-            (echoes if flags & FRAME_TX else received).append(entry)
+            if (entry[1], entry[2]) not in known:
+                foreign += 1            # another node of the bus
+            else:
+                (echoes if flags & FRAME_TX else received).append(entry)
         elif kind == MSG_ERROR:
             errors += 1
     expected = [(1 - c, i, e, d) for c, i, e, d in sent]
-    print("sent %d, echoes %d, received on the other channel %d, bus errors %d" % (len(sent), len(echoes), len(received), errors))
+    print("sent %d, echoes %d, received on the other channel %d, bus errors %d, frames of other nodes %d" % (
+        len(sent), len(echoes), len(received), errors, foreign))
     ok = True
     for channel in (0, 1):
         if [e for e in echoes if e[0] == channel] != [s for s in sent if s[0] == channel]:
@@ -164,7 +171,7 @@ def loop_test(board, bitrate):
             ok = False
     # remote frame
     board.transmit(0, 0x7F0, bytes(4), remote=True)
-    remote = [decode_frame(p) for k, p in board.packets(0.5) if k == MSG_FRAME]
+    remote = [decode_frame(p) for k, p in board.packets(0.5 + 400.0 / bitrate) if k == MSG_FRAME]
     if not any(f[0] == 1 and f[1] & FRAME_REMOTE and f[3] == 0x7F0 and f[4] == 4 for f in remote):
         print("FAIL: the remote frame was not received on channel 1")
         ok = False
