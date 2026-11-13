@@ -13820,6 +13820,15 @@ void CMainFrame::LoadControllerConfigData(SCONTROLLER_DETAILS& sController, xmlN
         {
             sController.m_unDataBitRate = atoi(strVar.c_str());
         }
+        // BUSMASTER-NG: whether the channel runs in CAN FD mode, and the debug / self test flag of the driver
+        if (xmlUtils::GetDataFrmNode(pNodePtr,"CANFD_Enabled",strVar))
+        {
+            sController.m_bcanFDEnabled = (atoi(strVar.c_str()) != 0);
+        }
+        if (xmlUtils::GetDataFrmNode(pNodePtr,"Debug",strVar))
+        {
+            sController.m_bDebug = atoi(strVar.c_str());
+        }
         if (xmlUtils::GetDataFrmNode(pNodePtr,"CANFD_SamplePoint",strVar))
         {
             sController.m_unDataSamplePoint = atoi(strVar.c_str());
@@ -16870,6 +16879,8 @@ void CMainFrame::SaveConfigDataToXML( SCONTROLLER_DETAILS& controller, xmlNodePt
     strVar = strData.c_str();
     xmlNewChild( pNodePtr, nullptr, BAD_CAST "CANFD_BaudRate", BAD_CAST strVar );
 
+    xmlNewChild( pNodePtr, nullptr, BAD_CAST "CANFD_Enabled", BAD_CAST (controller.m_bcanFDEnabled ? "1" : "0") );
+
     std::stringstream stream12;
     stream12 << controller.m_unDataSamplePoint;
     strData = stream12.str();
@@ -16950,6 +16961,7 @@ void CMainFrame::vInitialize( SCONTROLLER_DETAILS& controller, BOOL bUpdateHWDes
 
     /* CAN FD related parameters */
 	controller.m_bcanFDEnabled = FALSE;
+	controller.m_bDebug = FALSE;
 	controller.m_bSupportCANFD = FALSE;
     controller.m_unDataBitRate = 2000000;
     controller.m_unDataSamplePoint = 70;

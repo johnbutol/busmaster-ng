@@ -3,10 +3,10 @@
 Firmware that turns a Teensy 4.0 into a two-channel CAN interface for BUSMASTER-NG (driver *Teensy 4.0*,
 `CAN_Teensy.dll`).
 
-| BUSMASTER interface | Controller | Teensy pins | Transceiver standby |
-|---|---|---|---|
-| `... - CAN1` | CAN1 | 22 (CTX1), 23 (CRX1) | pin 5 |
-| `... - CAN3` | CAN3 | 31 (CTX3), 30 (CRX3) | pin 6 |
+| BUSMASTER interface | Controller | Teensy pins | Transceiver standby | |
+|---|---|---|---|---|
+| `... - CAN1` | CAN1 | 22 (CTX1), 23 (CRX1) | pin 5 | classic CAN |
+| `... - CAN3` | CAN3 | 31 (CTX3), 30 (CRX3) | pin 6 | classic CAN or CAN FD |
 
 Each controller needs a CAN transceiver. The firmware was written for the *Ultimate Breakout Board for Teensy 4.0*
 (two MCP2558FD transceivers on CAN1 and CAN3, 120 ohm terminations enabled by solder jumpers), but any board with
@@ -40,7 +40,12 @@ BUSMASTER-NG lists the boards or is connected, so the firmware can be loaded aga
 
 ## What it does
 
-- Classic CAN on both channels, standard and extended identifiers, remote frames. No CAN FD yet (CAN3 could).
+- Classic CAN on both channels, standard and extended identifiers, remote frames.
+- CAN FD (ISO) on CAN3 when BUSMASTER-NG asks for it (*Hardware Selection → Advanced*): frames of up to 64 bytes,
+  with or without bit rate switch. The controllers run from a 24 MHz clock, so the data bit rate is one that divides
+  it: 250, 500 kbit/s, 1, 2, 3 or 4 Mbit/s (5 and 8 Mbit/s are not possible). The transceiver must be a CAN FD one
+  (the MCP2558FD of the breakout board is, up to 8 Mbit/s).
+- A self test mode for each channel: frames are looped inside the controller, nothing goes to the bus.
 - Frames are time stamped in the CAN interrupt with the microsecond clock of the Teensy.
 - A sent frame comes back to BUSMASTER-NG when it is really on the bus, with its time stamp. Frames of a channel
   are sent one at a time, in the order BUSMASTER-NG gave them (256 can wait).
@@ -54,8 +59,16 @@ BUSMASTER-NG lists the boards or is connected, so the firmware can be loaded aga
 `tools/bmt_test.py` (Python with pyserial) talks to the firmware directly:
 
     python tools/bmt_test.py              board information and status
+    python tools/bmt_test.py --selftest   nothing wired: classic CAN on both channels and CAN FD on CAN3, looped
+                                          inside the controllers
     python tools/bmt_test.py --loop       the two CAN ports wired together: frames must cross in both directions
+    python tools/bmt_test.py --fdalone    CAN3 alone on its bus: a CAN FD frame is sent and its fast bits checked
     python tools/bmt_test.py --listen 10  print what both channels receive for 10 seconds
+
+`python tools/bmt_test.py --help` lists the options (bit rates, CAN FD).
+
+CAN FD is in `src/can3fd.cpp`, written on the registers of the controller (the FD part of the FlexCAN_T4 library
+has no notification of sent frames, no remote frames and no error report); classic CAN uses the library.
 
 The serial protocol is described in
 [Sources/BUSMASTER/CAN_Teensy/TeensyProtocol.h](../../Sources/BUSMASTER/CAN_Teensy/TeensyProtocol.h); the firmware

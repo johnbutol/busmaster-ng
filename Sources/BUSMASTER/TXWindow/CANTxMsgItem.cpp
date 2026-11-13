@@ -25,7 +25,9 @@
 
 CCANTxMsgItem::CCANTxMsgItem()
 {
-    MsgDetails.pchData = new unsigned char[def_MSG_DLC_MAX];
+    // BUSMASTER-NG: room for a CAN FD frame, and no random data
+    MsgDetails.pchData = new unsigned char[def_MSG_FD_LENGTH_MAX];
+    memset(MsgDetails.pchData, 0, def_MSG_FD_LENGTH_MAX);
 }
 CCANTxMsgItem::~CCANTxMsgItem()
 {
@@ -136,11 +138,14 @@ int CCANTxMsgItem::SetMsgConfig(xmlNodePtr pxmlNodePtr)
     {
         MsgDetails.nMsgType |= CCANTxMsgItem::eCANRTR;
     }
-	int nDlcFromConfig = atoi(strGetValueAtTag(pxmlNodePtr, DEF_DLC).c_str());
-	if (nDlcFromConfig > MAX_DATA_LEN_CAN)
-	{
-		nDlcFromConfig = 8;
-	}
+    // BUSMASTER-NG: CAN FD frame
+    if (0 == std::strcmp(strGetValueAtTag(pxmlNodePtr, "CANFD").c_str(), "TRUE"))
+    {
+        MsgDetails.nMsgType |= CCANTxMsgItem::eCANFD;
+        MsgDetails.nMsgType &= ~CCANTxMsgItem::eCANRTR;
+    }
+	int nDlcFromConfig = CCANTxMsgItem::nValidDataLength(MsgDetails.nMsgType,
+	                     atoi(strGetValueAtTag(pxmlNodePtr, DEF_DLC).c_str()));
     //Msg DLC
 	MsgDetails.nDLC = nDlcFromConfig;
     //Msg Databytes
@@ -148,7 +153,7 @@ int CCANTxMsgItem::SetMsgConfig(xmlNodePtr pxmlNodePtr)
     char* pch;
     pch = strtok((char*)strDataBytes.c_str(), " ,.-");
     int i = 0;
-	while (pch != nullptr && i < MAX_DATA_LEN_CAN)
+	while (pch != nullptr && i < nDlcFromConfig)
     {
         MsgDetails.pchData[i] = atoi(pch);
         pch = strtok(nullptr, " ,.-");
@@ -211,6 +216,12 @@ int CCANTxMsgItem::GetMsgConfig(xmlNodePtr pxmlNodePtr)
         else
         {
             xmlNewChild(pxmlNodePtr, nullptr, BAD_CAST DEF_RTR, BAD_CAST "FALSE");
+        }
+
+        // BUSMASTER-NG: CAN FD frame (the tag is written only for these, older versions ignore it)
+        if (CCANTxMsgItem::eCANFD & MsgDetails.nMsgType)
+        {
+            xmlNewChild(pxmlNodePtr, nullptr, BAD_CAST "CANFD", BAD_CAST "TRUE");
         }
 
         //DLC

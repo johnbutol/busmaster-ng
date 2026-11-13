@@ -7,6 +7,7 @@ set(sources
 set(headers
   CAN_Teensy.h
   CAN_Teensy_Extern.h
+  CAN_Teensy_Resource.h
   CAN_Teensy_stdafx.h
   TeensyLink.h
   TeensyProtocol.h)

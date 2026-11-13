@@ -125,10 +125,17 @@ int CCANTransmitter::nGetMsgAt(int nIndex, STCAN_MSG& ouCANMsg)
     {
         ouCANMsg.m_ucRTR = 1;
     }
-    ouCANMsg.m_ucDataLen = pouMsgItem->MsgDetails.nDLC;
+    // BUSMASTER-NG: CAN FD frames (up to 64 data bytes, never remote)
+    ouCANMsg.m_bCANFD = (CCANTxMsgItem::eCANFD & pouMsgItem->MsgDetails.nMsgType) != 0;
+    if (ouCANMsg.m_bCANFD)
+    {
+        ouCANMsg.m_ucRTR = 0;
+    }
+    int nLength = CCANTxMsgItem::nValidDataLength(pouMsgItem->MsgDetails.nMsgType, pouMsgItem->MsgDetails.nDLC);
+    ouCANMsg.m_ucDataLen = (unsigned char)nLength;
     ouCANMsg.m_ucChannel = pouMsgItem->MsgDetails.nChannel;
-    memcpy(ouCANMsg.m_ucData, pouMsgItem->MsgDetails.pchData, pouMsgItem->MsgDetails.nDLC);
-    ouCANMsg.m_bCANFD = false;
+    memset(ouCANMsg.m_ucData, 0, sizeof(ouCANMsg.m_ucData));
+    memcpy(ouCANMsg.m_ucData, pouMsgItem->MsgDetails.pchData, nLength);
 
     return hResult;
 }

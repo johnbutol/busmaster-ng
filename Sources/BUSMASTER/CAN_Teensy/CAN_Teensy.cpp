@@ -30,6 +30,7 @@
 #include "DIL_Interface/HardwareListingCAN.h"
 
 #include "TeensyLink.h"
+#include "CAN_Teensy_Resource.h"
 
 #define USAGE_EXPORT
 #include "CAN_Teensy_Extern.h"
@@ -107,6 +108,7 @@ struct SInterface
 {
     SBoard* m_board;
     int m_boardChannel;
+    bool m_canFd;                   // the controller can do CAN FD
     std::string m_description;      // also saved in the configuration to find the interface again
     std::string m_details;
 };
@@ -118,6 +120,10 @@ struct SChannel
     int m_boardChannel;
     std::string m_description;
     unsigned long m_bitRate;
+    bool m_canFd;                   // the controller can do CAN FD
+    bool m_fd;                      // CAN FD mode asked for this channel
+    unsigned long m_dataBitRate;
+    bool m_selfTest;                // frames looped inside the controller, nothing on the bus
     volatile unsigned char m_tec;
     volatile unsigned char m_rec;
     volatile unsigned char m_peakTec;
@@ -126,7 +132,8 @@ struct SChannel
     volatile unsigned long m_rxLost;
     volatile unsigned long m_txDropped;
 
-    SChannel() : m_board(nullptr), m_boardChannel(0), m_bitRate(500000), m_tec(0), m_rec(0),
+    SChannel() : m_board(nullptr), m_boardChannel(0), m_bitRate(500000), m_canFd(false), m_fd(false),
+        m_dataBitRate(2000000), m_selfTest(false), m_tec(0), m_rec(0),
         m_peakTec(0), m_peakRec(0), m_busState(BMT_BUS_ACTIVE), m_rxLost(0), m_txDropped(0) {}
 };
 
@@ -342,10 +349,10 @@ public:
         sMsg.m_unMsgID = frame.id;
         sMsg.m_ucEXTENDED = (frame.flags & BMT_FRAME_EXTENDED) ? 1 : 0;
         sMsg.m_ucRTR = (frame.flags & BMT_FRAME_REMOTE) ? 1 : 0;
-        sMsg.m_ucDataLen = frame.dlc;
+        sMsg.m_ucDataLen = frame.length;
         sMsg.m_ucChannel = (UCHAR)(nChannel + 1);
-        sMsg.m_bCANFD = false;
-        memcpy(sMsg.m_ucData, frame.data, 8);
+        sMsg.m_bCANFD = (frame.flags & BMT_FRAME_FD) != 0;
+        memcpy(sMsg.m_ucData, frame.data, sizeof(frame.data));
 
         sg_lock.Enter();
         vWriteIntoClientsBuffer(sCanData);
@@ -480,11 +487,12 @@ static void vScanBoards(std::string& problems)
             SInterface sInterface;
             sInterface.m_board = &board;
             sInterface.m_boardChannel = nChannel;
+            sInterface.m_canFd = (board.m_info.capabilities[nChannel] & BMT_CAP_CANFD) != 0;
             sprintf_s(acText, "%s %lu - %s", board.m_info.board.c_str(), board.m_info.serial,
                       board.m_info.channelName[nChannel].c_str());
             sInterface.m_description = acText;
-            sprintf_s(acText, "Firmware %d.%d, %s", board.m_info.firmwareMajor, board.m_info.firmwareMinor,
-                      board.m_port.c_str());
+            sprintf_s(acText, "Firmware %d.%d, %s%s", board.m_info.firmwareMajor, board.m_info.firmwareMinor,
+                      board.m_port.c_str(), sInterface.m_canFd ? ", CAN FD" : "");
             sInterface.m_details = acText;
             sg_interfaces.push_back(sInterface);
         }
@@ -502,10 +510,21 @@ static void vScanBoards(std::string& problems)
             {
                 sg_channels[i].m_board = sg_interfaces[j].m_board;
                 sg_channels[i].m_boardChannel = sg_interfaces[j].m_boardChannel;
+                sg_channels[i].m_canFd = sg_interfaces[j].m_canFd;
                 break;
             }
         }
     }
+}
+
+/** Opens a channel of a board that is connected, in the mode its settings ask. */
+static bool bOpenChannel(SChannel& channel, std::string& error)
+{
+    const bool bFd = channel.m_fd && channel.m_canFd;
+    const unsigned char ucMode = (unsigned char)((sg_bListenOnly ? BMT_MODE_LISTEN_ONLY : 0) |
+                                 (bFd ? BMT_MODE_FD : 0) | (channel.m_selfTest ? BMT_MODE_LOOPBACK : 0));
+    return channel.m_board->m_link.OpenChannel((unsigned char)channel.m_boardChannel, channel.m_bitRate, ucMode,
+            channel.m_dataBitRate, error);
 }
 
 /** Opens the ports and the channels. The reason of a failure is in sg_lastError. */
@@ -555,7 +574,7 @@ static bool bStartBoards()
         channel.m_busState = BMT_BUS_ACTIVE;
         channel.m_rxLost = channel.m_txDropped = 0;
         std::string error;
-        if (!board.m_link.OpenChannel((unsigned char)channel.m_boardChannel, channel.m_bitRate, sg_bListenOnly, error))
+        if (!bOpenChannel(channel, error))
         {
             char acText[32];
             sprintf_s(acText, "Channel %u: ", i + 1);
@@ -567,19 +586,140 @@ static bool bStartBoards()
 }
 
 // ---------------------------------------------------------------------------------------------
-// The hardware selection dialog asks this for the bit rates
+// Advanced settings of a channel (button Advanced of the hardware selection dialog)
 
+static const unsigned long sg_aulDataBitRates[] = { 250000, 500000, 1000000, 2000000, 3000000, 4000000 };
+
+class CTeensySettingsDlg : public CDialog
+{
+public:
+    CString m_omInterface;
+    bool m_bCanFdPossible;
+    BOOL m_bCanFd;
+    unsigned long m_ulDataBitRate;
+    BOOL m_bSelfTest;
+
+    explicit CTeensySettingsDlg(CWnd* pParent)
+        : CDialog(IDD_TEENSY_SETTINGS, pParent), m_bCanFdPossible(false), m_bCanFd(FALSE),
+          m_ulDataBitRate(2000000), m_bSelfTest(FALSE)
+    {
+    }
+
+protected:
+    virtual BOOL OnInitDialog()
+    {
+        CDialog::OnInitDialog();
+        SetDlgItemText(IDC_TEENSY_INTERFACE, m_omInterface);
+        CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_TEENSY_DATA_RATE);
+        int nSelected = -1;
+        for (int i = 0; i < _countof(sg_aulDataBitRates); i++)
+        {
+            CString omRate;
+            omRate.Format("%lu", sg_aulDataBitRates[i]);
+            pCombo->AddString(omRate);
+            if (sg_aulDataBitRates[i] == m_ulDataBitRate)
+            {
+                nSelected = i;
+            }
+        }
+        if (nSelected >= 0)
+        {
+            pCombo->SetCurSel(nSelected);
+        }
+        else
+        {
+            CString omRate;
+            omRate.Format("%lu", m_ulDataBitRate);
+            pCombo->SetWindowText(omRate);
+        }
+        CheckDlgButton(IDC_TEENSY_CANFD, (m_bCanFd && m_bCanFdPossible) ? BST_CHECKED : BST_UNCHECKED);
+        CheckDlgButton(IDC_TEENSY_SELF_TEST, m_bSelfTest ? BST_CHECKED : BST_UNCHECKED);
+        GetDlgItem(IDC_TEENSY_CANFD)->EnableWindow(m_bCanFdPossible);
+        if (!m_bCanFdPossible)
+        {
+            SetDlgItemText(IDC_TEENSY_CANFD, "CAN FD (this controller of the Teensy is a classic CAN controller)");
+        }
+        vEnableDataRate();
+        return TRUE;
+    }
+
+    virtual void OnOK()
+    {
+        CString omRate;
+        GetDlgItemText(IDC_TEENSY_DATA_RATE, omRate);
+        const unsigned long ulRate = strtoul(omRate, nullptr, 10);
+        m_bCanFd = m_bCanFdPossible && IsDlgButtonChecked(IDC_TEENSY_CANFD) == BST_CHECKED;
+        if (m_bCanFd && (ulRate < 5000 || ulRate > 8000000))
+        {
+            MessageBox("The data bit rate is a number of bit/s, for example 2000000.", MESSAGE_TITLE,
+                       MB_OK | MB_ICONWARNING);
+            return;
+        }
+        if (ulRate >= 5000 && ulRate <= 8000000)
+        {
+            m_ulDataBitRate = ulRate;
+        }
+        m_bSelfTest = IsDlgButtonChecked(IDC_TEENSY_SELF_TEST) == BST_CHECKED;
+        CDialog::OnOK();
+    }
+
+    afx_msg void OnCanFdClicked()
+    {
+        vEnableDataRate();
+    }
+
+    void vEnableDataRate()
+    {
+        const BOOL bEnable = m_bCanFdPossible && IsDlgButtonChecked(IDC_TEENSY_CANFD) == BST_CHECKED;
+        GetDlgItem(IDC_TEENSY_DATA_RATE)->EnableWindow(bEnable);
+        GetDlgItem(IDC_TEENSY_DATA_RATE_LABEL)->EnableWindow(bEnable);
+    }
+
+    DECLARE_MESSAGE_MAP()
+};
+
+BEGIN_MESSAGE_MAP(CTeensySettingsDlg, CDialog)
+    ON_BN_CLICKED(IDC_TEENSY_CANFD, &CTeensySettingsDlg::OnCanFdClicked)
+END_MESSAGE_MAP()
+
+/** The hardware selection dialog asks this for the bit rates and the advanced settings. */
 class CTeensySettings : public IChangeRegisters
 {
 public:
-    int InvokeAdavancedSettings(PSCONTROLLER_DETAILS /*pControllerDetails*/, UINT /*nCount*/, UINT)
+    int InvokeAdavancedSettings(PSCONTROLLER_DETAILS pControllerDetails, UINT nCount, UINT nSelected)
     {
-        ::MessageBox(::GetActiveWindow(),
-                     "The Teensy interface has no advanced settings.\n\n"
-                     "Choose the bit rate of each channel in the list: any rate from 5 kbit/s to 1 Mbit/s "
-                     "the 24 MHz clock of the CAN controllers can make.",
-                     MESSAGE_TITLE, MB_OK | MB_ICONINFORMATION);
-        return WARN_INITDAT_NCONFIRM;
+        if (pControllerDetails == nullptr || nSelected >= nCount)
+        {
+            return WARN_INITDAT_NCONFIRM;
+        }
+        AFX_MANAGE_STATE(AfxGetStaticModuleState());
+        SCONTROLLER_DETAILS& sDetails = pControllerDetails[nSelected];
+
+        // the dialog put the description of the interface of this channel here
+        bool bCanFd = false;
+        for (size_t i = 0; i < sg_interfaces.size(); i++)
+        {
+            if (sg_interfaces[i].m_description == sDetails.m_omHardwareDesc)
+            {
+                bCanFd = sg_interfaces[i].m_canFd;
+                break;
+            }
+        }
+        CTeensySettingsDlg dialog(CWnd::GetActiveWindow());
+        dialog.m_omInterface.Format("Channel %u: %s", nSelected + 1, sDetails.m_omHardwareDesc.c_str());
+        dialog.m_bCanFdPossible = bCanFd;
+        dialog.m_bCanFd = sDetails.m_bcanFDEnabled && bCanFd;
+        dialog.m_ulDataBitRate = sDetails.m_unDataBitRate;
+        dialog.m_bSelfTest = sDetails.m_bDebug != 0;
+        if (dialog.DoModal() != IDOK)
+        {
+            return WARN_INITDAT_NCONFIRM;
+        }
+        sDetails.m_bSupportCANFD = bCanFd;
+        sDetails.m_bcanFDEnabled = dialog.m_bCanFd != FALSE;
+        sDetails.m_unDataBitRate = dialog.m_ulDataBitRate;
+        sDetails.m_bDebug = dialog.m_bSelfTest;
+        return INFO_INITDAT_CONFIRM_CONFIG;
     }
 
     double vValidateBaudRate(double dBaudRate, int, UINT)
@@ -937,6 +1077,7 @@ HRESULT CDIL_CAN_Teensy::CAN_ListHwInterfaces(INTERFACE_HW_LIST& asSelHwInterfac
         const SInterface& sInterface = sg_interfaces[anSelected[i]];
         sg_channels[i].m_board = sInterface.m_board;
         sg_channels[i].m_boardChannel = sInterface.m_boardChannel;
+        sg_channels[i].m_canFd = sInterface.m_canFd;
         sg_channels[i].m_description = sInterface.m_description;
         asSelHwInterface[i] = asAvailable[anSelected[i]];
     }
@@ -990,6 +1131,13 @@ HRESULT CDIL_CAN_Teensy::CAN_SetConfigData(PSCONTROLLER_DETAILS InitData, int Le
             sg_channels[i].m_bitRate = (unsigned long)(dBitRate + 0.5);
         }
         InitData[i].m_omHardwareDesc = sg_channels[i].m_description;
+        InitData[i].m_bSupportCANFD = sg_channels[i].m_canFd;
+        sg_channels[i].m_fd = InitData[i].m_bcanFDEnabled && sg_channels[i].m_canFd;
+        if (InitData[i].m_unDataBitRate >= 5000 && InitData[i].m_unDataBitRate <= 8000000)
+        {
+            sg_channels[i].m_dataBitRate = InitData[i].m_unDataBitRate;
+        }
+        sg_channels[i].m_selfTest = InitData[i].m_bDebug != 0;
     }
     if (Length > 0)
     {
@@ -1050,15 +1198,21 @@ HRESULT CDIL_CAN_Teensy::CAN_SendMsg(DWORD dwClientID, const STCAN_MSG& sCanTxMs
     {
         return ERR_INVALID_CHANNEL;
     }
-    if (sCanTxMsg.m_bCANFD || sCanTxMsg.m_ucDataLen > 8)
-    {
-        return S_FALSE;         // classic CAN only
-    }
     SChannel& channel = sg_channels[sCanTxMsg.m_ucChannel - 1];
     if (channel.m_board == nullptr || sg_bListenOnly)
     {
         return S_FALSE;
     }
+    const bool bFd = sCanTxMsg.m_bCANFD;
+    if ((bFd && !(channel.m_fd && channel.m_canFd)) || sCanTxMsg.m_ucDataLen > (bFd ? BMT_MAX_DATA : 8))
+    {
+        return S_FALSE;         // a CAN FD frame on a channel that is not in CAN FD mode, or too long
+    }
+    // the data of a CAN FD frame is sent at the data bit rate when it is the faster one
+    const unsigned char ucFlags = (unsigned char)((sCanTxMsg.m_ucEXTENDED ? BMT_FRAME_EXTENDED : 0) |
+                                  ((!bFd && sCanTxMsg.m_ucRTR) ? BMT_FRAME_REMOTE : 0) |
+                                  (bFd ? BMT_FRAME_FD : 0) |
+                                  ((bFd && channel.m_dataBitRate > channel.m_bitRate) ? BMT_FRAME_BRS : 0));
 
     sg_lock.Enter();
     if (!bClientIdExist(dwClientID))
@@ -1078,8 +1232,7 @@ HRESULT CDIL_CAN_Teensy::CAN_SendMsg(DWORD dwClientID, const STCAN_MSG& sCanTxMs
     sg_lock.Leave();
 
     const bool bSent = channel.m_board->m_link.Transmit((unsigned char)channel.m_boardChannel, sCanTxMsg.m_unMsgID,
-                       sCanTxMsg.m_ucEXTENDED != 0, sCanTxMsg.m_ucRTR != 0,
-                       sCanTxMsg.m_ucDataLen, sCanTxMsg.m_ucData);
+                       ucFlags, sCanTxMsg.m_ucDataLen, sCanTxMsg.m_ucData);
     return bSent ? S_OK : S_FALSE;
 }
 
@@ -1142,8 +1295,7 @@ HRESULT CDIL_CAN_Teensy::CAN_SetControllerParams(int nValue, ECONTR_PARAM eContr
             std::string error;
             if (channel.m_board != nullptr)
             {
-                channel.m_board->m_link.OpenChannel((unsigned char)channel.m_boardChannel, channel.m_bitRate,
-                                                    sg_bListenOnly, error);
+                bOpenChannel(channel, error);
             }
         }
     }

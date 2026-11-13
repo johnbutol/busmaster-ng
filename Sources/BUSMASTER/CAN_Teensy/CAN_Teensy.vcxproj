@@ -236,6 +236,7 @@
     <ClInclude Include="..\DIL_Interface\HardwareListingCAN.h" />
     <ClInclude Include="CAN_Teensy.h" />
     <ClInclude Include="CAN_Teensy_Extern.h" />
+    <ClInclude Include="CAN_Teensy_Resource.h" />
     <ClInclude Include="CAN_Teensy_stdafx.h" />
     <ClInclude Include="TeensyLink.h" />
     <ClInclude Include="TeensyProtocol.h" />

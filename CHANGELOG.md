@@ -14,7 +14,13 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   is in [Firmware/Teensy4_CAN](Firmware/Teensy4_CAN) (PlatformIO project) and has to be loaded on the Teensy once;
   Windows 10 / 11 need no driver for its USB serial port.
   - Classic CAN, standard and extended identifiers, remote frames, any bit rate from 5 kbit/s to 1 Mbit/s the
-    controller can make; listen only mode. No CAN FD yet.
+    controller can make; listen only mode.
+  - **CAN FD** (ISO) on the CAN3 channel: in *Hardware Selection* select the channel and click *Advanced* to switch
+    it on and choose the data bit rate (250, 500 kbit/s, 1, 2, 3 or 4 Mbit/s). Frames of up to 64 bytes are
+    received and sent; they are sent with bit rate switch when the data bit rate is the higher one. The firmware
+    of the Teensy must be the one of this version (protocol 2).
+  - *Advanced* also has a **self test**: the frames of the channel are looped inside the controller and nothing is
+    sent to the bus, to try a channel (CAN FD too) without a second node.
   - Frames are time stamped on the Teensy (microseconds); sent frames are shown when they are really on the bus.
   - Error counters, and bus errors as error frames.
   - Several boards can be used together; the configuration remembers which controller is which channel.
@@ -22,6 +28,17 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
     another node: 200 frames sent between the two channels in both directions (standard, extended, remote),
     all received in order and without bus errors; in BUSMASTER-NG, hardware selection, connection, reception
     on both channels and sending from the Transmit window. Not tested yet: listen only mode, several boards.
+  - CAN FD is tested with the self test only (every frame length, with and without bit rate switch, at 125 k / 500 k,
+    500 k / 2 M and 1 M / 4 M bit/s) and, for the arbitration bit rate, with classic frames on the 25 kbit/s bus.
+    **Not tested against another CAN FD node**: there was none.
+
+**Transmit window**
+- CAN FD frames: the message types *Std FD* and *Ext FD*, with 0 to 8, 12, 16, 20, 24, 32, 48 or 64 data bytes (a
+  length in between is rounded up). The signal matrix shows the first 8 bytes. A driver without CAN FD, or a channel
+  that is not in CAN FD mode, does not send them.
+
+**Configuration**
+- The CAN FD mode of a channel is saved in the configuration file (it was not: only the data bit rate was).
 
 ## 3.5.0 "Overdrive" - 2026-11-10
 

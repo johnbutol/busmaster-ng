@@ -186,6 +186,7 @@ void CDIL_CAN::vInitialize(SCONTROLLER_DETAILS& controller, BOOL bUpdateHWDesc)
 
 	/* CAN FD related parameters */
 	controller.m_bcanFDEnabled = FALSE;
+	controller.m_bDebug = FALSE;
 	controller.m_bSupportCANFD = FALSE;
 	controller.m_unDataBitRate = 2000000;
 	controller.m_unDataSamplePoint = 70;

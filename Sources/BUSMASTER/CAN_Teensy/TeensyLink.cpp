@@ -340,7 +340,7 @@ bool CLink::Open(const std::string& port, std::string& error)
     }
     if (m_info.protocol != BMT_PROTOCOL_VERSION)
     {
-        char text[160];
+        char text[400];
         sprintf_s(text, "The firmware of the Teensy on %s speaks protocol %d, this BUSMASTER-NG needs %d: "
                   "load the firmware of this version", port.c_str(), m_info.protocol, BMT_PROTOCOL_VERSION);
         error = text;
@@ -433,7 +433,7 @@ void CLink::Handle(const Packet& packet)
     {
         case BMT_MSG_FRAME:
         {
-            if (packet.length < BMT_SIZE_FRAME_HEADER || p[10] > 8)
+            if (packet.length < BMT_SIZE_FRAME_HEADER || p[10] > BMT_MAX_DATA)
             {
                 break;
             }
@@ -442,10 +442,10 @@ void CLink::Handle(const Packet& packet)
             frame.flags = p[1];
             frame.timeUs = m_time.Extend(Get32(p + 2));
             frame.id = Get32(p + 6);
-            frame.dlc = p[10];
+            frame.length = p[10];
             memset(frame.data, 0, sizeof(frame.data));
             const unsigned char available = (unsigned char)(packet.length - BMT_SIZE_FRAME_HEADER);
-            memcpy(frame.data, p + BMT_SIZE_FRAME_HEADER, available < frame.dlc ? available : frame.dlc);
+            memcpy(frame.data, p + BMT_SIZE_FRAME_HEADER, available < frame.length ? available : frame.length);
             if (listener != nullptr)
             {
                 listener->OnFrame(*this, frame);
@@ -634,26 +634,36 @@ bool CLink::WaitAck(unsigned char command, unsigned char channel, unsigned char&
     return false;
 }
 
-bool CLink::OpenChannel(unsigned char channel, unsigned long bitRate, bool listenOnly, std::string& error)
+bool CLink::OpenChannel(unsigned char channel, unsigned long bitRate, unsigned char mode, unsigned long dataBitRate,
+                        std::string& error)
 {
-    unsigned char payload[BMT_SIZE_OPEN];
+    unsigned char payload[BMT_SIZE_OPEN_FD];
     payload[0] = channel;
-    payload[1] = listenOnly ? BMT_MODE_LISTEN_ONLY : BMT_MODE_NORMAL;
+    payload[1] = mode;
     Put32(payload + 2, bitRate);
+    Put32(payload + 6, dataBitRate);
+    const unsigned char size = (mode & BMT_MODE_FD) ? BMT_SIZE_OPEN_FD : BMT_SIZE_OPEN;
     ResetEvent(m_ackEvent);
     unsigned char result = BMT_ACK_BAD_PARAMETER;
-    if (!Send(BMT_CMD_OPEN, payload, sizeof(payload)) || !WaitAck(BMT_CMD_OPEN, channel, result))
+    if (!Send(BMT_CMD_OPEN, payload, size) || !WaitAck(BMT_CMD_OPEN, channel, result))
     {
         error = "The Teensy on " + m_portName + " does not answer";
         return false;
     }
-    char text[160];
+    char text[400];
     switch (result)
     {
         case BMT_ACK_OK:
             return true;
         case BMT_ACK_BAD_BITRATE:
             sprintf_s(text, "The Teensy cannot make the bit rate %lu bit/s", bitRate);
+            break;
+        case BMT_ACK_BAD_DATA_BITRATE:
+            sprintf_s(text, "The Teensy cannot make the CAN FD data bit rate %lu bit/s (with its 24 MHz clock: "
+                      "250, 500 kbit/s, 1, 2, 3 or 4 Mbit/s, not below the bit rate)", dataBitRate);
+            break;
+        case BMT_ACK_NO_FD:
+            sprintf_s(text, "This controller of the Teensy cannot do CAN FD");
             break;
         case BMT_ACK_BAD_CHANNEL:
             sprintf_s(text, "The Teensy has no channel %d", channel + 1);
@@ -673,19 +683,19 @@ bool CLink::CloseChannel(unsigned char channel)
     return Send(BMT_CMD_CLOSE, &channel, 1) && WaitAck(BMT_CMD_CLOSE, channel, result) && result == BMT_ACK_OK;
 }
 
-bool CLink::Transmit(unsigned char channel, unsigned long id, bool extended, bool remote,
-                     unsigned char dlc, const unsigned char* data)
+bool CLink::Transmit(unsigned char channel, unsigned long id, unsigned char flags,
+                     unsigned char length, const unsigned char* data)
 {
-    if (dlc > 8)
+    if (length > ((flags & BMT_FRAME_FD) ? BMT_MAX_DATA : 8))
     {
         return false;
     }
-    unsigned char payload[BMT_SIZE_TX_HEADER + 8];
+    unsigned char payload[BMT_SIZE_TX_HEADER + BMT_MAX_DATA];
     payload[0] = channel;
-    payload[1] = (unsigned char)((extended ? BMT_FRAME_EXTENDED : 0) | (remote ? BMT_FRAME_REMOTE : 0));
+    payload[1] = flags;
     Put32(payload + 2, id);
-    payload[6] = dlc;
-    const unsigned char dataLength = remote ? 0 : dlc;
+    payload[6] = length;
+    const unsigned char dataLength = (flags & BMT_FRAME_REMOTE) ? 0 : length;
     if (dataLength != 0)
     {
         memcpy(payload + BMT_SIZE_TX_HEADER, data, dataLength);

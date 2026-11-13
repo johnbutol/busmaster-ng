@@ -124,9 +124,10 @@ int CCANTxFormView::GetMsgRowProp(int nIndex, std::list<MSG_LST_ROW>& lstMsgRowP
         //DLC
         ouMsgLstRow.Text = std::to_string(pouMsgItem->MsgDetails.nDLC);
         ouMsgLstRow.NumInfo.m_uMinVal.m_un64Value = 1;
-        ouMsgLstRow.NumInfo.m_uMaxVal.m_un64Value = 8;
+        // BUSMASTER-NG: a CAN FD frame has up to 64 data bytes
+        ouMsgLstRow.NumInfo.m_uMaxVal.m_un64Value = CCANTxMsgItem::nMaxDataLength(pouMsgItem->MsgDetails.nMsgType);
         ouMsgLstRow.NumInfo.m_uDelta.m_un64Value = 1;
-        ouMsgLstRow.NumInfo.m_nTextLimit = 1;
+        ouMsgLstRow.NumInfo.m_nTextLimit = (pouMsgItem->MsgDetails.nMsgType & CCANTxMsgItem::eCANFD) ? 2 : 1;
         ouMsgLstRow.NumInfo.m_byFlag = BUDDY_CTRL;
         ouMsgLstRow.NumInfo.m_nSigLength = 8;
         ouMsgLstRow.NumInfo.m_byBase = defBASE_DEC;
@@ -134,13 +135,14 @@ int CCANTxFormView::GetMsgRowProp(int nIndex, std::list<MSG_LST_ROW>& lstMsgRowP
         lstMsgRowProp.push_back(ouMsgLstRow);
 
         //Msg Type
+        const bool bIsFd = (pouMsgItem->MsgDetails.nMsgType & CCANTxMsgItem::eCANFD) != 0;
         if (pouMsgItem->MsgDetails.nMsgType & CCANTxMsgItem::eCANSTD)
         {
-            ouMsgLstRow.Text = def_MSG_TYPE_STD;
+            ouMsgLstRow.Text = bIsFd ? def_MSG_TYPE_STD_FD : def_MSG_TYPE_STD;
         }
         else if (pouMsgItem->MsgDetails.nMsgType & CCANTxMsgItem::eCANEXT)
         {
-            ouMsgLstRow.Text = def_MSG_TYPE_EXT;
+            ouMsgLstRow.Text = bIsFd ? def_MSG_TYPE_EXT_FD : def_MSG_TYPE_EXT;
         }
 
         ouMsgLstRow.ListInfo.m_eType = eComboItem;
@@ -313,6 +315,9 @@ void CCANTxFormView::GetMsgTypeList(CStringArray& omStrMsgTypeList)
 {
     omStrMsgTypeList.Add(def_MSG_TYPE_STD);
     omStrMsgTypeList.Add(def_MSG_TYPE_EXT);
+    // BUSMASTER-NG: CAN FD frames; the driver refuses them on a channel that is not in CAN FD mode
+    omStrMsgTypeList.Add(def_MSG_TYPE_STD_FD);
+    omStrMsgTypeList.Add(def_MSG_TYPE_EXT_FD);
 }
 void CCANTxFormView::GetChannelList(CStringArray& omStrChannelList)
 {
@@ -428,7 +433,7 @@ void CCANTxFormView::vCheckBoxClickHandler(CListCtrl* pList, int nItem, int nSub
     }
     else if (nSubItem == eMsgColRTR)
     {
-        if (true == bEnable)
+        if (true == bEnable && !(pouMsgItem->MsgDetails.nMsgType & CCANTxMsgItem::eCANFD))
         {
             pouMsgItem->MsgDetails.nMsgType |= CCANTxMsgItem::eCANRTR;
         }
@@ -570,15 +575,27 @@ int& CCANTxFormView::GetValidMsgType(int& nMsgType, int nRow, int nId)
     m_lstMsg.GetItem(&lvitem);
 	bool bIsRTR = (lvitem.iImage!=0);
     //If the id is not within the range of ext or std the type cannot be changed.
-    if (omStrMsgType == def_MSG_TYPE_STD && nId >= 0 && nId < def_STD_MSG_ID_MAX)
+    // BUSMASTER-NG: "Std FD" and "Ext FD" are CAN FD frames
+    const bool bIsFd = (omStrMsgType == def_MSG_TYPE_STD_FD) || (omStrMsgType == def_MSG_TYPE_EXT_FD);
+    const bool bIsStd = (omStrMsgType == def_MSG_TYPE_STD) || (omStrMsgType == def_MSG_TYPE_STD_FD);
+    const bool bIsExt = (omStrMsgType == def_MSG_TYPE_EXT) || (omStrMsgType == def_MSG_TYPE_EXT_FD);
+    if (bIsStd && nId >= 0 && nId < def_STD_MSG_ID_MAX)
     {
         nMsgType = CCANTxMsgItem::eCANSTD;
     }
-    else if (omStrMsgType == def_MSG_TYPE_EXT && nId >= 0 && nId < def_EXT_MSG_ID_MAX)
+    else if (bIsExt && nId >= 0 && nId < def_EXT_MSG_ID_MAX)
     {
         nMsgType = CCANTxMsgItem::eCANEXT;
     }
-    if (true == bIsRTR)
+    else
+    {
+        nMsgType &= (CCANTxMsgItem::eCANSTD | CCANTxMsgItem::eCANEXT);
+    }
+    if (bIsFd)
+    {
+        nMsgType |= CCANTxMsgItem::eCANFD;      // a CAN FD frame is never a remote frame
+    }
+    else if (true == bIsRTR)
     {
         nMsgType |= CCANTxMsgItem::eCANRTR;
     }
@@ -727,7 +744,7 @@ int CCANTxFormView::OnMsgItemChanged(int nRow, int nColumn)
     }
 
 
-    UCHAR ucData[defMAX_BYTE] = { 0 };
+    UCHAR ucData[def_MSG_FD_LENGTH_MAX] = { 0 };
     int nDlc = 0;
     int nChannel = 0;
     char chKey = '\0';
@@ -765,14 +782,22 @@ int CCANTxFormView::OnMsgItemChanged(int nRow, int nColumn)
             break;
         case eMsgColType:
             GetValidMsgType(pouMsgItem->MsgDetails.nMsgType,nRow,pouMsgItem->MsgDetails.nMsgId);
+            // BUSMASTER-NG: back from CAN FD to classic CAN the frame keeps its first 8 bytes
+            pouMsgItem->MsgDetails.nDLC = CCANTxMsgItem::nValidDataLength(pouMsgItem->MsgDetails.nMsgType,
+                                          pouMsgItem->MsgDetails.nDLC);
             m_pouTxDataStore->SetMsgItem(nRow, pouMsgItem);
             break;
         case eMsgColDLC:
             nDlc = atol(omStrItem);
-            if (nDlc >= 0 && nDlc <= def_MSG_DLC_MAX)
+            if (nDlc >= 0 && nDlc <= CCANTxMsgItem::nMaxDataLength(pouMsgItem->MsgDetails.nMsgType))
             {
-                memcpy(ucData, pouMsgItem->MsgDetails.pchData, pouMsgItem->MsgDetails.nDLC);
-                memcpy(pouMsgItem->MsgDetails.pchData, ucData, nDlc);
+                // BUSMASTER-NG: a CAN FD frame has 0..8, 12, 16, 20, 24, 32, 48 or 64 bytes; new bytes are 0
+                nDlc = CCANTxMsgItem::nValidDataLength(pouMsgItem->MsgDetails.nMsgType, nDlc);
+                if (nDlc > pouMsgItem->MsgDetails.nDLC)
+                {
+                    memset(pouMsgItem->MsgDetails.pchData + pouMsgItem->MsgDetails.nDLC, 0,
+                           nDlc - pouMsgItem->MsgDetails.nDLC);
+                }
                 pouMsgItem->MsgDetails.nDLC = nDlc;
                 m_pouTxDataStore->SetMsgItem(nRow, pouMsgItem);
             }

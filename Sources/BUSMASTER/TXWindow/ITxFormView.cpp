@@ -663,7 +663,8 @@ for (auto itrSig: lstSigDetails)
 }
 void ITxFormView::vUpdateSignalMatrix(unsigned char* pchData, int nDlc)
 {
-    m_odSignalMatrix.vSetMessageLength(nDlc);
+    // BUSMASTER-NG: the matrix has 8 bytes; of a longer (CAN FD) frame it shows the first 8
+    m_odSignalMatrix.vSetMessageLength(nDlc > 8 ? 8 : nDlc);
     m_odSignalMatrix.vSetByteValue(pchData);
 }
 void ITxFormView::vUpdateDataByteListCtrl(bool bHexMode, int nDlc, unsigned char* pchData)
@@ -1206,8 +1207,8 @@ int ITxFormView::HighlightSignalMatrix(int nDlc, const SignalInstanse& ouSignalI
                        unLength,
                        endian);
 
-    m_odSignalMatrix.vSetMessageLength(nDlc);
-    m_odSignalMatrix.vSetHighlight(abySigMask, nDlc);
+    m_odSignalMatrix.vSetMessageLength(nDlc > 8 ? 8 : nDlc);
+    m_odSignalMatrix.vSetHighlight(abySigMask, nDlc > 8 ? 8 : nDlc);
     return hResult;
 }
 UINT64 ITxFormView::un64GetBitMask(int byte, int startBitIndexInByte, int length, bool bIntel, unsigned char* /*aucData*/, unsigned long long /*u64SignVal*/)

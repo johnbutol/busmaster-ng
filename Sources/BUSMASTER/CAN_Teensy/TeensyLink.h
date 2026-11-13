@@ -66,8 +66,8 @@ struct Frame
     unsigned char flags;                // BMT_FRAME_...
     unsigned long long timeUs;          // clock of the Teensy, extended to 64 bit
     unsigned long id;
-    unsigned char dlc;
-    unsigned char data[8];
+    unsigned char length;               // data bytes: 0..8, up to 64 for a CAN FD frame
+    unsigned char data[BMT_MAX_DATA];
 };
 
 struct Status
@@ -161,10 +161,13 @@ public:
     const std::string& PortName() const;
     void SetListener(IListener* listener);
 
-    bool OpenChannel(unsigned char channel, unsigned long bitRate, bool listenOnly, std::string& error);
+    /** mode: BMT_MODE_... bits; dataBitRate is used with BMT_MODE_FD. */
+    bool OpenChannel(unsigned char channel, unsigned long bitRate, unsigned char mode, unsigned long dataBitRate,
+                     std::string& error);
     bool CloseChannel(unsigned char channel);
-    bool Transmit(unsigned char channel, unsigned long id, bool extended, bool remote,
-                  unsigned char dlc, const unsigned char* data);
+    /** flags: BMT_FRAME_EXTENDED, _REMOTE, _FD, _BRS; length: data bytes (the DLC of a remote frame). */
+    bool Transmit(unsigned char channel, unsigned long id, unsigned char flags,
+                  unsigned char length, const unsigned char* data);
     /** Asks the status of a channel and waits for it. */
     bool QueryStatus(unsigned char channel, Status& status, DWORD timeoutMs = 500);
 

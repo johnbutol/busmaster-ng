@@ -1539,6 +1539,7 @@ void CHardwareListingCAN::InitializeControllerDetails(int nItem)
 	m_pControllerDetails[nItem].m_bLowSpeed = FALSE;
 	m_pControllerDetails[nItem].m_unBTL_Cycles = 10;
 	m_pControllerDetails[nItem].m_bcanFDEnabled                 = FALSE;
+	m_pControllerDetails[nItem].m_bDebug                        = FALSE;
 	m_pControllerDetails[nItem].m_unDataBitRate                  = 2000000;
 	m_pControllerDetails[nItem].m_unDataSamplePoint              = 70;
 	m_pControllerDetails[nItem].m_unDataBTL_Cycles               = 10;

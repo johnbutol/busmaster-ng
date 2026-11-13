@@ -20,7 +20,7 @@
  * The Teensy is a USB serial device (virtual COM port; the baud rate of the port does not matter).
  * Both directions use the same packet:
  *
- *     0xA5 | type | length | payload (length bytes, 0..64) | crc8
+ *     0xA5 | type | length | payload (length bytes, 0..80) | crc8
  *
  * crc8 (polynomial 0x07, start 0) covers type, length and payload. Numbers are little endian.
  * The host must raise DTR; when DTR drops (port closed, program gone) the firmware closes both
@@ -28,9 +28,13 @@
  *
  * Host -> Teensy
  *   HELLO       (no payload)                          closes all channels, answered by INFO
- *   OPEN        channel u8, mode u8, bit rate u32     answered by ACK
+ *   OPEN        channel u8, mode u8, bit rate u32, data bit rate u32 (only with BMT_MODE_FD)
+ *                                                     answered by ACK
  *   CLOSE       channel u8                            answered by ACK
- *   TX          channel u8, flags u8, id u32, dlc u8, data[dlc]
+ *   TX          channel u8, flags u8, id u32, length u8, data[length]
+ *               length is the number of data bytes: 0..8, or with BMT_FRAME_FD one of
+ *               0..8, 12, 16, 20, 24, 32, 48, 64 (FD frames only on a channel opened with
+ *               BMT_MODE_FD); a remote frame has no data, length is its DLC
  *               not answered: the frame comes back as FRAME with BMT_FRAME_TX once it is on the
  *               bus; a frame that cannot be queued is counted in STATUS (txDropped)
  *   GET_STATUS  channel u8                            answered by STATUS
@@ -40,12 +44,13 @@
  *               capabilities u8 for each channel, serial number u32,
  *               text "board;name of channel 0;name of channel 1" (not terminated)
  *   ACK         command u8, channel u8, result u8 (BMT_ACK_...)
- *   FRAME       channel u8, flags u8, timestamp u32, id u32, dlc u8, data[dlc]
+ *   FRAME       channel u8, flags u8, timestamp u32, id u32, length u8, data[length]
  *               (no data for a remote frame)
  *   STATUS      channel u8, open u8, bus state u8, TEC u8, REC u8, timestamp u32,
  *               rxLost u32, txDropped u32, txPending u16
  *               sent every 100 ms for each open channel
- *   ERROR       channel u8, timestamp u32, ESR1 u32 (FlexCAN error and status register),
+ *   ERROR       channel u8, timestamp u32, ESR1 u32 (FlexCAN error and status register; errors
+ *               of the data phase of CAN FD frames are reported with the same bits),
  *               TEC u8, REC u8          a bus error was detected (at most one every 10 ms)
  *
  * Timestamps are microseconds of the Teensy clock, 32 bit (wrap after 71.6 minutes; the host
@@ -55,8 +60,9 @@
 #pragma once
 
 #define BMT_SOF                 0xA5
-#define BMT_PROTOCOL_VERSION    1
-#define BMT_MAX_PAYLOAD         64
+#define BMT_PROTOCOL_VERSION    2       /* 2: CAN FD (longer packets, data bit rate in OPEN) */
+#define BMT_MAX_PAYLOAD         80
+#define BMT_MAX_DATA            64      /* data bytes of a CAN FD frame */
 #define BMT_CHANNEL_COUNT       2
 
 /* USB identity of a Teensy in "Serial" mode (PJRC) */
@@ -77,23 +83,32 @@
 #define BMT_MSG_STATUS          0x84
 #define BMT_MSG_ERROR           0x85
 
-/* OPEN: mode */
+/* OPEN: mode (bits) */
 #define BMT_MODE_NORMAL         0x00
 #define BMT_MODE_LISTEN_ONLY    0x01
+#define BMT_MODE_FD             0x02    /* CAN FD (ISO), only on a channel with BMT_CAP_CANFD */
+#define BMT_MODE_LOOPBACK       0x04    /* self test: frames are looped inside the controller, nothing
+                                           is driven on the bus; a sent frame comes back as echo and
+                                           as received frame */
 
 /* TX and FRAME: flags */
 #define BMT_FRAME_EXTENDED      0x01
 #define BMT_FRAME_REMOTE        0x02
 #define BMT_FRAME_TX            0x04    /* FRAME only: sent by this interface */
+#define BMT_FRAME_FD            0x08    /* CAN FD frame (FDF bit) */
+#define BMT_FRAME_BRS           0x10    /* CAN FD frame with bit rate switch */
+#define BMT_FRAME_ESI           0x20    /* FRAME only: error state indicator of the sender */
 
 /* INFO: capabilities of a channel */
-#define BMT_CAP_CANFD           0x01    /* the controller can do CAN FD (not used by this firmware yet) */
+#define BMT_CAP_CANFD           0x01    /* the controller can do CAN FD */
 
 /* ACK: result */
 #define BMT_ACK_OK              0
 #define BMT_ACK_BAD_CHANNEL     1
 #define BMT_ACK_BAD_BITRATE     2       /* the bit rate cannot be made from the controller clock */
 #define BMT_ACK_BAD_PARAMETER   3
+#define BMT_ACK_NO_FD           4       /* the controller of this channel cannot do CAN FD */
+#define BMT_ACK_BAD_DATA_BITRATE 5      /* the data bit rate cannot be made from the controller clock */
 
 /* STATUS: bus state */
 #define BMT_BUS_ACTIVE          0
@@ -113,6 +128,7 @@
 
 /* sizes of the fixed part of the payloads */
 #define BMT_SIZE_OPEN           6
+#define BMT_SIZE_OPEN_FD        10
 #define BMT_SIZE_TX_HEADER      7
 #define BMT_SIZE_FRAME_HEADER   11
 #define BMT_SIZE_STATUS         19
