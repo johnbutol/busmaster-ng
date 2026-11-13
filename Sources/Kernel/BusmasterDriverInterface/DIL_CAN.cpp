@@ -67,6 +67,7 @@ enum
     DRIVER_CAN_VSCOM,
     DRIVER_CAN_IVIEW,
     DRIVER_CAN_ISOLAR,
+    DRIVER_CAN_TEENSY,
     DIL_TOTAL,          // Its value must be <= MAX_DILS
     DAL_NONE = ~0x0
 };
@@ -88,6 +89,7 @@ static ENTRY_DIL sg_ListDIL[] =
     {DRIVER_CAN_MHS,        "&MHS Tiny-CAN"     },
     {DRIVER_CAN_NSI,        "&NSI CAN-API"      },
     {DRIVER_CAN_PEAK_USB,   "&PEAK USB"         },
+    {DRIVER_CAN_TEENSY,     "&Teensy 4.0"       },
     {DRIVER_CAN_VECTOR_XL,  "&Vector XL"        },
     {DRIVER_CAN_VSCOM,      "VScom &CAN-API"    },
 };
@@ -353,6 +355,9 @@ HRESULT CDIL_CAN::DILC_SelectDriver(DWORD dwDriverID, HWND hWndOwner)
                 break;
             case DRIVER_CAN_ISOLAR:
                 m_hDll = LoadLibrary("CAN_ISOLAR_EVE_VCAN.dll");
+                break;
+            case DRIVER_CAN_TEENSY:
+                m_hDll = LoadLibrary("CAN_Teensy.dll");
                 break;
             case DAL_NONE:
                 DILC_PerformClosureOperations();

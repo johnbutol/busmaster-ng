@@ -1,0 +1,4 @@
+// Resources of CAN_Teensy.dll: the hardware selection dialog shared by the CAN drivers.
+// The version information comes from Sources\BusmasterNGVersion.rc.
+
+#include "../DIL_Interface/ChannelSelection.rc"

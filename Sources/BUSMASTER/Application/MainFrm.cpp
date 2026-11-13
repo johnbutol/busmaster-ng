@@ -198,6 +198,7 @@ enum
     DRIVER_CAN_VSCOM,
     DRIVER_CAN_IVIEW,
     DRIVER_CAN_ISOLAR,
+    DRIVER_CAN_TEENSY,
     DIL_TOTAL,          // Its value must be <= MAX_DILS
     DAL_NONE = ~0x0
 };
@@ -350,8 +351,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWndEx)
     ON_UPDATE_COMMAND_UI(IDM_CFGN_REPLAY, OnUpdateCfgnReplay)
     ON_COMMAND(IDM_CONFIGURE_SIMULATEDSYSTEMS, OnConfigureSimulatedsystems)
     ON_COMMAND(IDM_CONFIGURE_SIMULATEDSYSTEMS_LIN, OnConfigureSimulatedsystemsLin)
-    ON_COMMAND_RANGE(IDC_SELECT_DRIVER,IDC_SELECT_DRIVER + 14, OnSelectDriver)
-    ON_UPDATE_COMMAND_UI_RANGE(IDC_SELECT_DRIVER,IDC_SELECT_DRIVER + 14, OnUpdateSelectDriver)
+    ON_COMMAND_RANGE(IDC_SELECT_DRIVER,IDC_SELECT_DRIVER + 15, OnSelectDriver)
+    ON_UPDATE_COMMAND_UI_RANGE(IDC_SELECT_DRIVER,IDC_SELECT_DRIVER + 15, OnUpdateSelectDriver)
     
     
     ON_COMMAND_RANGE(IDC_SELECT_LIN_DRIVER,IDC_SELECT_LIN_DRIVER + 5, OnSelectLINDriver)
@@ -9632,6 +9633,7 @@ static const char* pszGetCanDriverFileName(DWORD dwDriverId)
         case DRIVER_CAN_VSCOM:      return "CAN_VSCOM.dll";
         case DRIVER_CAN_IVIEW:      return "CAN_i-VIEW.dll";
         case DRIVER_CAN_ISOLAR:     return "CAN_ISOLAR_EVE_VCAN.dll";
+        case DRIVER_CAN_TEENSY:     return "CAN_Teensy.dll";
         default:                    return nullptr;
     }
 }

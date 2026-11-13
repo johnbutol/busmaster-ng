@@ -8,6 +8,19 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**Drivers**
+- New driver **Teensy 4.0** (`CAN_Teensy.dll`): a Teensy 4.0 with CAN transceivers becomes a two-channel CAN
+  interface (CAN1 and CAN3 of the Teensy, for example on the "Ultimate Breakout Board for Teensy 4.0"). The firmware
+  is in [Firmware/Teensy4_CAN](Firmware/Teensy4_CAN) (PlatformIO project) and has to be loaded on the Teensy once;
+  Windows 10 / 11 need no driver for its USB serial port.
+  - Classic CAN, standard and extended identifiers, remote frames, any bit rate from 5 kbit/s to 1 Mbit/s the
+    controller can make; listen only mode. No CAN FD yet.
+  - Frames are time stamped on the Teensy (microseconds); sent frames are shown when they are really on the bus.
+  - Error counters, and bus errors as error frames.
+  - Several boards can be used together; the configuration remembers which controller is which channel.
+  - **Not tested with a Teensy yet**: the firmware and the driver build, and without a board the driver says what
+    is missing.
+
 ## 3.5.0 "Overdrive" - 2026-11-10
 
 Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that
