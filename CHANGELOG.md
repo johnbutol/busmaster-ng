@@ -20,8 +20,8 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   - Several boards can be used together; the configuration remembers which controller is which channel.
   - Tested with one Teensy 4.0 on that breakout board, its two CAN ports wired together on a 25 kbit/s bus with
     another node: 200 frames sent between the two channels in both directions (standard, extended, remote),
-    all received in order and without bus errors; in BUSMASTER-NG, hardware selection, connection and reception
-    on both channels. Not tested yet: sending from BUSMASTER-NG, listen only mode, several boards.
+    all received in order and without bus errors; in BUSMASTER-NG, hardware selection, connection, reception
+    on both channels and sending from the Transmit window. Not tested yet: listen only mode, several boards.
 
 ## 3.5.0 "Overdrive" - 2026-11-10
 
