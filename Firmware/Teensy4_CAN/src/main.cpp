@@ -15,8 +15,11 @@
 /**
  * BUSMASTER-NG CAN interface on a Teensy 4.0: two classic CAN channels over the USB serial port.
  *
- *   channel 0 = CAN1 (pin 22 CTX1, pin 23 CRX1)
- *   channel 1 = CAN3 (pin 31 CTX3, pin 30 CRX3)
+ *   channel 0 = CAN1 (pin 22 CTX1, pin 23 CRX1), standby of its transceiver on pin 5
+ *   channel 1 = CAN3 (pin 31 CTX3, pin 30 CRX3), standby of its transceiver on pin 6
+ *
+ * The standby pins are those of the "Ultimate Breakout Board for Teensy 4.0": a transceiver is
+ * in standby (silent) while its channel is closed.
  *
  * The protocol is described in Sources/BUSMASTER/CAN_Teensy/TeensyProtocol.h.
  *
@@ -33,6 +36,9 @@
 #define FW_VERSION_MINOR 0
 
 static const char INFO_TEXT[] = "Teensy 4.0;CAN1;CAN3";
+
+// pin S of the transceiver of each channel: high = standby, low = normal
+static const uint8_t STANDBY_PIN[BMT_CHANNEL_COUNT] = { 5, 6 };
 
 static FlexCAN_T4<CAN1, RX_SIZE_16, TX_SIZE_16> can1;
 static FlexCAN_T4<CAN3, RX_SIZE_16, TX_SIZE_16> can3;
@@ -263,6 +269,7 @@ template <class Controller> static void closeChannel(Controller& can, uint8_t in
 {
     Channel& channel = channels[index];
     channel.open = false;
+    digitalWriteFast(STANDBY_PIN[index], HIGH);
     if (channel.started)
     {
         // freeze: the controller leaves the bus (no acknowledge, nothing sent)
@@ -316,6 +323,7 @@ static uint8_t openChannel(Controller& can, uint8_t index, uint32_t bitRate, uin
     channel.lastStatusMs = millis();
     channel.lastErrorMs = millis();
     channel.open = true;
+    digitalWriteFast(STANDBY_PIN[index], LOW);
     can.enableFIFOInterrupt();
     return BMT_ACK_OK;
 }
@@ -564,6 +572,11 @@ void setup()
     channels[0].can = &can1;
     channels[1].base = CAN3;
     channels[1].can = &can3;
+    for (uint8_t index = 0; index < BMT_CHANNEL_COUNT; index++)
+    {
+        pinMode(STANDBY_PIN[index], OUTPUT);
+        digitalWriteFast(STANDBY_PIN[index], HIGH);
+    }
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(115200);           // USB: the baud rate is not used
 }
