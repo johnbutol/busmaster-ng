@@ -72,8 +72,10 @@ class Board:
                 if len(self.buffer) < length + 4:
                     break
                 if crc8(self.buffer[1:3 + length]) == self.buffer[3 + length]:
-                    yield self.buffer[1], self.buffer[3:3 + length]
+                    kind, payload = self.buffer[1], self.buffer[3:3 + length]
+                    # before the yield: the caller may stop reading at this packet
                     self.buffer = self.buffer[length + 4:]
+                    yield kind, payload
                 else:
                     self.buffer = self.buffer[1:]
 
