@@ -72,7 +72,7 @@ The release notes, change log and read-me of the original BUSMASTER up to v3.2.x
 - The release packages are built on **GitHub Actions** from the tagged sources, the **IXXAT VCI** driver included.
 - A driver for a **Teensy 4.0** used as a two-channel CAN interface, with its firmware
   ([Firmware/Teensy4_CAN](Firmware/Teensy4_CAN)). The same driver works with a
-  **Raspberry Pi Pico 2 / Pico** ([Firmware/Pico_CAN](Firmware/Pico_CAN)), tested on a Pico without transceivers.
+  **Raspberry Pi Pico 2 / Pico** ([Firmware/Pico_CAN](Firmware/Pico_CAN)), tested on both boards without transceivers.
 - The Message window and Signal Watch show the **value descriptions** of CAN signals again
   (`Position control` instead of `3`), lost since BUSMASTER 3.0.
 

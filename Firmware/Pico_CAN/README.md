@@ -76,5 +76,5 @@ not in this repository: PlatformIO fetches it. A firmware binary built from both
 
 The serial protocol is described in
 [Sources/BUSMASTER/CAN_Teensy/TeensyProtocol.h](../../Sources/BUSMASTER/CAN_Teensy/TeensyProtocol.h), shared with
-the Teensy firmware. `Firmware/Teensy4_CAN/tools/bmt_test.py` also talks to a Pico (board information, `--loop`
-between channels 0 and 1, `--listen` is refused: no listen only mode).
+the Teensy firmware. `Firmware/Teensy4_CAN/tools/bmt_test.py` also talks to a Pico: board information, and `--loop` between all its
+channels wired together (`--listen` is refused: no listen only mode).

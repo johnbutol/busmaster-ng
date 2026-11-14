@@ -28,12 +28,12 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   transceiver for each channel. The Pico has no CAN controller: CAN is done in software by the can2040 library
   (Kevin O'Connor), so there is no listen only mode (refused with a message), no error counters and no bus off;
   classic CAN only.
-  - Tested with a Pico (two channels) without transceivers: the board is found and its two channels listed,
-    BUSMASTER-NG connects and disconnects, listen only and wrong bit rates are refused, a frame nobody
-    acknowledges stays pending. With its two channels wired together through two diodes and a pull-up (no
-    transceiver): 200 frames in both directions, standard, extended and remote, all received in order, at 25,
-    125, 250, 500 and 800 kbit/s (a few bus errors, recovered, from 500 kbit/s); 1 Mbit/s fails on that slow
-    wiring. **Not tested with transceivers on a real bus**, and the Pico 2 firmware is only built.
+  - Tested without transceivers, the channels of the board wired together through diodes and a pull-up: a
+    Pico 2 (three channels) and a Pico (two channels). BUSMASTER-NG finds the board, lists its channels, connects
+    and disconnects; listen only and wrong bit rates are refused. 100 frames from each channel (standard, extended,
+    remote), all received by the other channels in order: Pico 2 from 25 kbit/s to 1 Mbit/s, Pico from 25 to
+    800 kbit/s (1 Mbit/s failed on that wiring). From 500 kbit/s a few bus errors, recovered.
+    **Not tested with transceivers on a real bus.**
     The driver was checked again with the Teensy (200 frames between its two channels).
 
 ## 3.5.0 "Overdrive" - 2026-11-10
