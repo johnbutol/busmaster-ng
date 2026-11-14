@@ -394,6 +394,8 @@ public:
         sError.m_ucRxErrCount = error.rec;
         sError.m_ucChannel = (UCHAR)(nChannel + 1);
         sError.m_nSubError = 0;
+        // the message window takes the channel of an error from the frame part of the union
+        sCanData.m_uDataInfo.m_sCANMsg.m_ucChannel = (UCHAR)(nChannel + 1);
 
         sg_lock.Enter();
         vWriteIntoClientsBuffer(sCanData);
