@@ -129,9 +129,9 @@ def status_text(payload):
 
 
 def find_port():
-    ports = [p.device for p in serial.tools.list_ports.comports() if p.vid == 0x16C0 and p.pid == 0x0483]
+    ports = [p.device for p in serial.tools.list_ports.comports() if (p.vid == 0x16C0 and p.pid == 0x0483) or p.vid == 0x2E8A]
     if not ports:
-        sys.exit("No Teensy serial port found (USB 16C0:0483). Is it plugged, with the firmware loaded?")
+        sys.exit("No Teensy (USB 16C0:0483) or Pico (USB 2E8A) serial port found. Is it plugged, with the firmware loaded?")
     return ports[0]
 
 

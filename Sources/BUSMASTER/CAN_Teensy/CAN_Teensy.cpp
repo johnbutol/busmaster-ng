@@ -14,11 +14,12 @@
 
 /**
  * @file  CAN_Teensy.cpp
- * @brief CAN driver for a Teensy 4.0 with the BUSMASTER-NG CAN firmware (Firmware/Teensy4_CAN).
+ * @brief CAN driver for a board with the BUSMASTER-NG CAN firmware: a Teensy 4.0
+ *        (Firmware/Teensy4_CAN, two channels) or a Raspberry Pi Pico 2 / Pico (Firmware/Pico_CAN,
+ *        three / two channels).
  *
- * The Teensy is a USB serial device with two classic CAN controllers (CAN1 and CAN3 on the usual
- * breakout boards). Each controller of each board found is an interface the user can give to a
- * BUSMASTER channel. The serial ports are open only while the driver lists the boards and while
+ * The board is a USB serial device. Each CAN channel of each board found is an interface the user
+ * can give to a BUSMASTER channel. The serial ports are open only while the driver lists the boards and while
  * BUSMASTER is connected, so the Teensy can be programmed in between.
  */
 
@@ -57,7 +58,7 @@ BOOL CCAN_Teensy::InitInstance()
 #define MAX_CLIENT_ALLOWED  16
 #define MAX_ACK_ENTRIES     4096
 
-static const char* const MESSAGE_TITLE = "BUSMASTER-NG - Teensy";
+static const char* const MESSAGE_TITLE = "BUSMASTER-NG - Teensy / Pico";
 
 enum
 {
@@ -401,7 +402,7 @@ public:
 
     void OnDisconnected(teensy::CLink& link)
     {
-        sg_lastError = "The Teensy on " + link.PortName() + " was disconnected";
+        sg_lastError = "The board on " + link.PortName() + " was disconnected";
     }
 };
 
@@ -449,9 +450,10 @@ static void vScanBoards(std::string& problems)
     const std::vector<teensy::Port> ports = teensy::EnumeratePorts();
     if (ports.empty())
     {
-        problems = "No Teensy was found.\n\n"
-                   "Plug the Teensy 4.0 in a USB port. It must run the BUSMASTER-NG CAN firmware "
-                   "(folder Firmware\\Teensy4_CAN of the sources), built with USB type \"Serial\".";
+        problems = "No Teensy or Raspberry Pi Pico was found.\n\n"
+                   "Plug the board in a USB port. It must run the BUSMASTER-NG CAN firmware: folder "
+                   "Firmware\\Teensy4_CAN of the sources for a Teensy 4.0 (USB type \"Serial\"), "
+                   "Firmware\\Pico_CAN for a Pico 2 or a Pico.";
         return;
     }
     for (size_t i = 0; i < ports.size(); i++)
@@ -491,7 +493,7 @@ static void vScanBoards(std::string& problems)
     }
     if (sg_interfaces.empty() && problems.empty())
     {
-        problems = "No Teensy with the BUSMASTER-NG CAN firmware was found.";
+        problems = "No board with the BUSMASTER-NG CAN firmware was found.";
     }
     // the channels selected before keep their interface when it is still there
     for (UINT i = 0; i < sg_nNoOfChannels; i++)
@@ -520,7 +522,7 @@ static bool bStartBoards()
         SChannel& channel = sg_channels[i];
         if (channel.m_board == nullptr)
         {
-            sg_lastError = "No Teensy is selected: use Channel Configuration";
+            sg_lastError = "No board is selected: use Channel Configuration";
             return false;
         }
         SBoard& board = *channel.m_board;
@@ -535,7 +537,7 @@ static bool bStartBoards()
             teensy::Status status;
             if (!board.m_link.QueryStatus(0, status))
             {
-                sg_lastError = "The Teensy on " + board.m_port + " does not answer";
+                sg_lastError = "The board on " + board.m_port + " does not answer";
                 return false;
             }
             LARGE_INTEGER now;
@@ -575,9 +577,9 @@ public:
     int InvokeAdavancedSettings(PSCONTROLLER_DETAILS /*pControllerDetails*/, UINT /*nCount*/, UINT)
     {
         ::MessageBox(::GetActiveWindow(),
-                     "The Teensy interface has no advanced settings.\n\n"
-                     "Choose the bit rate of each channel in the list: any rate from 5 kbit/s to 1 Mbit/s "
-                     "the 24 MHz clock of the CAN controllers can make.",
+                     "This interface has no advanced settings.\n\n"
+                     "Choose the bit rate of each channel in the list, from 5 kbit/s to 1 Mbit/s. A Teensy "
+                     "makes the rates its 24 MHz CAN clock divides; a Pico makes any rate.",
                      MESSAGE_TITLE, MB_OK | MB_ICONINFORMATION);
         return WARN_INITDAT_NCONFIRM;
     }
@@ -1017,7 +1019,7 @@ HRESULT CDIL_CAN_Teensy::CAN_StartHardware(void)
     if (!bStartBoards())
     {
         vStopBoards();
-        const std::string text = "The Teensy interface cannot be started.\n\n" + sg_lastError + ".";
+        const std::string text = "The interface cannot be started.\n\n" + sg_lastError + ".";
         ::MessageBox(sg_hOwnerWnd, text.c_str(), MESSAGE_TITLE, MB_OK | MB_ICONWARNING);
         return S_FALSE;
     }

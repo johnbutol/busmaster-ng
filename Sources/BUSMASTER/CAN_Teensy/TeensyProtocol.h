@@ -14,10 +14,11 @@
 
 /**
  * @file  TeensyProtocol.h
- * @brief Serial protocol between BUSMASTER-NG (CAN_Teensy.dll) and the Teensy 4.0 CAN firmware
- *        (Firmware/Teensy4_CAN). Plain C, shared by both sides.
+ * @brief Serial protocol between BUSMASTER-NG (CAN_Teensy.dll) and the CAN firmware of a board:
+ *        Teensy 4.0 (Firmware/Teensy4_CAN) or Raspberry Pi Pico / Pico 2 (Firmware/Pico_CAN).
+ *        Plain C, shared by both sides.
  *
- * The Teensy is a USB serial device (virtual COM port; the baud rate of the port does not matter).
+ * The board is a USB serial device (virtual COM port; the baud rate of the port does not matter).
  * Both directions use the same packet:
  *
  *     0xA5 | type | length | payload (length bytes, 0..64) | crc8
@@ -36,9 +37,9 @@
  *   GET_STATUS  channel u8                            answered by STATUS
  *
  * Teensy -> host
- *   INFO        protocol u8, firmware major u8, minor u8, channel count u8,
+ *   INFO        protocol u8, firmware major u8, minor u8, channel count u8 (1..BMT_MAX_CHANNELS),
  *               capabilities u8 for each channel, serial number u32,
- *               text "board;name of channel 0;name of channel 1" (not terminated)
+ *               text "board;name of channel 0;name of channel 1;..." (not terminated)
  *   ACK         command u8, channel u8, result u8 (BMT_ACK_...)
  *   FRAME       channel u8, flags u8, timestamp u32, id u32, dlc u8, data[dlc]
  *               (no data for a remote frame)
@@ -57,11 +58,14 @@
 #define BMT_SOF                 0xA5
 #define BMT_PROTOCOL_VERSION    1
 #define BMT_MAX_PAYLOAD         64
-#define BMT_CHANNEL_COUNT       2
+#define BMT_CHANNEL_COUNT       2       /* channels of the Teensy 4.0 firmware */
+#define BMT_MAX_CHANNELS        4       /* the most channels a board can have */
 
 /* USB identity of a Teensy in "Serial" mode (PJRC) */
 #define BMT_USB_VID             0x16C0
 #define BMT_USB_PID             0x0483
+/* USB vendor of the Raspberry Pi Pico boards (any product: the firmware answers HELLO or not) */
+#define BMT_USB_VID_PICO        0x2E8A
 
 /* host -> Teensy */
 #define BMT_CMD_HELLO           0x01
@@ -88,12 +92,15 @@
 
 /* INFO: capabilities of a channel */
 #define BMT_CAP_CANFD           0x01    /* the controller can do CAN FD (not used by this firmware yet) */
+#define BMT_CAP_NO_LISTEN_ONLY  0x02    /* no listen only mode: OPEN with it is refused */
+#define BMT_CAP_NO_ERROR_COUNTERS 0x04  /* TEC, REC and the bus state of STATUS are not real */
 
 /* ACK: result */
 #define BMT_ACK_OK              0
 #define BMT_ACK_BAD_CHANNEL     1
 #define BMT_ACK_BAD_BITRATE     2       /* the bit rate cannot be made from the controller clock */
 #define BMT_ACK_BAD_PARAMETER   3
+#define BMT_ACK_NO_LISTEN_ONLY  6       /* the channel has no listen only mode */
 
 /* STATUS: bus state */
 #define BMT_BUS_ACTIVE          0
@@ -118,7 +125,8 @@
 #define BMT_SIZE_STATUS         19
 #define BMT_SIZE_ERROR          11
 #define BMT_SIZE_ACK            3
-#define BMT_SIZE_INFO_HEADER    (4 + BMT_CHANNEL_COUNT + 4)
+#define BMT_SIZE_INFO(channels) (4 + (channels) + 4)        /* INFO before its text */
+#define BMT_SIZE_INFO_HEADER    BMT_SIZE_INFO(BMT_CHANNEL_COUNT)    /* of the Teensy 4.0 firmware */
 
 static inline unsigned char bmt_crc8(unsigned char crc, const unsigned char* data, unsigned int length)
 {

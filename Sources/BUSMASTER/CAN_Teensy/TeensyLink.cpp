@@ -51,7 +51,9 @@ std::vector<Port> EnumeratePorts()
 {
     std::vector<Port> ports;
     char wanted[40];
+    char wantedPico[40];
     sprintf_s(wanted, "VID_%04X&PID_%04X", BMT_USB_VID, BMT_USB_PID);
+    sprintf_s(wantedPico, "VID_%04X&", BMT_USB_VID_PICO);
 
     HDEVINFO devices = SetupDiGetClassDevsA(&PORTS_CLASS, nullptr, nullptr, DIGCF_PRESENT);
     if (devices == INVALID_HANDLE_VALUE)
@@ -68,7 +70,7 @@ std::vector<Port> EnumeratePorts()
             continue;
         }
         _strupr_s(id);
-        if (strstr(id, wanted) == nullptr)
+        if (strstr(id, wanted) == nullptr && strstr(id, wantedPico) == nullptr)
         {
             continue;
         }
@@ -334,14 +336,14 @@ bool CLink::Open(const std::string& port, std::string& error)
     }
     if (!answered)
     {
-        error = "The Teensy on " + port + " does not answer: it does not run the BUSMASTER-NG CAN firmware";
+        error = "The board on " + port + " does not answer: it does not run the BUSMASTER-NG CAN firmware";
         Close();
         return false;
     }
     if (m_info.protocol != BMT_PROTOCOL_VERSION)
     {
         char text[160];
-        sprintf_s(text, "The firmware of the Teensy on %s speaks protocol %d, this BUSMASTER-NG needs %d: "
+        sprintf_s(text, "The firmware of the board on %s speaks protocol %d, this BUSMASTER-NG needs %d: "
                   "load the firmware of this version", port.c_str(), m_info.protocol, BMT_PROTOCOL_VERSION);
         error = text;
         Close();
@@ -515,7 +517,9 @@ void CLink::Handle(const Packet& packet)
 
         case BMT_MSG_INFO:
         {
-            if (packet.length < BMT_SIZE_INFO_HEADER)
+            // the capabilities of each channel come before the serial number
+            const int channels = packet.length >= 4 ? p[3] : 0;
+            if (channels < 1 || channels > BMT_MAX_CHANNELS || packet.length < BMT_SIZE_INFO(channels))
             {
                 break;
             }
@@ -523,16 +527,16 @@ void CLink::Handle(const Packet& packet)
             info.protocol = p[0];
             info.firmwareMajor = p[1];
             info.firmwareMinor = p[2];
-            info.channelCount = p[3] > BMT_CHANNEL_COUNT ? BMT_CHANNEL_COUNT : p[3];
-            for (int i = 0; i < BMT_CHANNEL_COUNT; i++)
+            info.channelCount = channels;
+            for (int i = 0; i < channels; i++)
             {
                 info.capabilities[i] = p[4 + i];
             }
-            info.serial = Get32(p + 4 + BMT_CHANNEL_COUNT);
-            // "board;channel 0;channel 1"
-            const std::string text((const char*)p + BMT_SIZE_INFO_HEADER, packet.length - BMT_SIZE_INFO_HEADER);
+            info.serial = Get32(p + 4 + channels);
+            // "board;channel 0;channel 1;..."
+            const std::string text((const char*)p + BMT_SIZE_INFO(channels), packet.length - BMT_SIZE_INFO(channels));
             size_t start = 0;
-            for (int field = 0; field <= BMT_CHANNEL_COUNT; field++)
+            for (int field = 0; field <= channels; field++)
             {
                 size_t end = text.find(';', start);
                 if (end == std::string::npos)
@@ -552,9 +556,9 @@ void CLink::Handle(const Packet& packet)
             }
             if (info.board.empty())
             {
-                info.board = "Teensy";
+                info.board = "Board";
             }
-            for (int i = 0; i < BMT_CHANNEL_COUNT; i++)
+            for (int i = 0; i < channels; i++)
             {
                 if (info.channelName[i].empty())
                 {
@@ -644,22 +648,26 @@ bool CLink::OpenChannel(unsigned char channel, unsigned long bitRate, bool liste
     unsigned char result = BMT_ACK_BAD_PARAMETER;
     if (!Send(BMT_CMD_OPEN, payload, sizeof(payload)) || !WaitAck(BMT_CMD_OPEN, channel, result))
     {
-        error = "The Teensy on " + m_portName + " does not answer";
+        error = "The board on " + m_portName + " does not answer";
         return false;
     }
-    char text[160];
+    char text[320];
     switch (result)
     {
         case BMT_ACK_OK:
             return true;
         case BMT_ACK_BAD_BITRATE:
-            sprintf_s(text, "The Teensy cannot make the bit rate %lu bit/s", bitRate);
+            sprintf_s(text, "The board cannot make the bit rate %lu bit/s", bitRate);
+            break;
+        case BMT_ACK_NO_LISTEN_ONLY:
+            sprintf_s(text, "This board has no listen only (passive) mode: its CAN is made in software and "
+                      "always acknowledges the frames. Use the active mode");
             break;
         case BMT_ACK_BAD_CHANNEL:
-            sprintf_s(text, "The Teensy has no channel %d", channel + 1);
+            sprintf_s(text, "The board has no channel %d", channel + 1);
             break;
         default:
-            sprintf_s(text, "The Teensy refused to open channel %d (code %d)", channel + 1, result);
+            sprintf_s(text, "The board refused to open channel %d (code %d)", channel + 1, result);
             break;
     }
     error = text;

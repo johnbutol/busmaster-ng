@@ -14,7 +14,8 @@
 
 /**
  * @file  TeensyLink.h
- * @brief Serial link to a Teensy 4.0 with the BUSMASTER-NG CAN firmware (see TeensyProtocol.h).
+ * @brief Serial link to a board (Teensy 4.0, Raspberry Pi Pico) with the BUSMASTER-NG CAN firmware
+ *        (see TeensyProtocol.h).
  *        Win32 only, no MFC.
  */
 
@@ -28,14 +29,14 @@
 namespace teensy
 {
 
-/** A serial port that belongs to a Teensy (USB identity of PJRC, "Serial" mode). */
+/** A serial port that may belong to a board: a Teensy in "Serial" mode, or a Raspberry Pi Pico. */
 struct Port
 {
     std::string name;           // "COM7"
     std::string usbSerial;      // serial number of the USB device, may be empty
 };
 
-/** The Teensy serial ports that are present now. The firmware is not checked. */
+/** The serial ports of such boards that are present now. The firmware is not checked. */
 std::vector<Port> EnumeratePorts();
 
 /** The answer of the firmware to HELLO. */
@@ -45,14 +46,14 @@ struct Info
     int firmwareMajor;
     int firmwareMinor;
     int channelCount;
-    unsigned char capabilities[BMT_CHANNEL_COUNT];
+    unsigned char capabilities[BMT_MAX_CHANNELS];
     unsigned long serial;
     std::string board;                              // "Teensy 4.0"
-    std::string channelName[BMT_CHANNEL_COUNT];     // "CAN1", "CAN3"
+    std::string channelName[BMT_MAX_CHANNELS];      // "CAN1", "CAN3"
 
     Info() : protocol(0), firmwareMajor(0), firmwareMinor(0), channelCount(0), serial(0)
     {
-        for (int i = 0; i < BMT_CHANNEL_COUNT; i++)
+        for (int i = 0; i < BMT_MAX_CHANNELS; i++)
         {
             capabilities[i] = 0;
         }

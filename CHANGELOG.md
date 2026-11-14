@@ -23,6 +23,14 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
     all received in order and without bus errors; in BUSMASTER-NG, hardware selection, connection, reception
     on both channels and sending from the Transmit window. Not tested yet: listen only mode, several boards.
 
+- The same driver, now named **Teensy / Pico**, works with a **Raspberry Pi Pico 2** (three CAN channels) or a
+  **Pico** (two channels) loaded with the firmware of [Firmware/Pico_CAN](Firmware/Pico_CAN) and one 3.3 V CAN
+  transceiver for each channel. The Pico has no CAN controller: CAN is done in software by the can2040 library
+  (Kevin O'Connor), so there is no listen only mode (refused with a message), no error counters and no bus off;
+  classic CAN only.
+  - **Not tested on a Pico yet**: the firmware builds for both boards and the driver was checked again with the
+    Teensy (board information, 200 frames between its two channels).
+
 ## 3.5.0 "Overdrive" - 2026-11-10
 
 Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that

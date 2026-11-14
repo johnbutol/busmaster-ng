@@ -89,7 +89,7 @@ static ENTRY_DIL sg_ListDIL[] =
     {DRIVER_CAN_MHS,        "&MHS Tiny-CAN"     },
     {DRIVER_CAN_NSI,        "&NSI CAN-API"      },
     {DRIVER_CAN_PEAK_USB,   "&PEAK USB"         },
-    {DRIVER_CAN_TEENSY,     "&Teensy 4.0"       },
+    {DRIVER_CAN_TEENSY,     "&Teensy / Pico"    },
     {DRIVER_CAN_VECTOR_XL,  "&Vector XL"        },
     {DRIVER_CAN_VSCOM,      "VScom &CAN-API"    },
 };
