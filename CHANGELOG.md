@@ -30,7 +30,10 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   classic CAN only.
   - Tested with a Pico (two channels) without transceivers: the board is found and its two channels listed,
     BUSMASTER-NG connects and disconnects, listen only and wrong bit rates are refused, a frame nobody
-    acknowledges stays pending. **No frame was exchanged on a bus yet**, and the Pico 2 firmware is only built.
+    acknowledges stays pending. With its two channels wired together through two diodes and a pull-up (no
+    transceiver): 200 frames in both directions, standard, extended and remote, all received in order, at 25,
+    125, 250, 500 and 800 kbit/s (a few bus errors, recovered, from 500 kbit/s); 1 Mbit/s fails on that slow
+    wiring. **Not tested with transceivers on a real bus**, and the Pico 2 firmware is only built.
     The driver was checked again with the Teensy (200 frames between its two channels).
 
 ## 3.5.0 "Overdrive" - 2026-11-10
