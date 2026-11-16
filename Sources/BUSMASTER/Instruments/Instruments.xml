@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BUSMASTER-NG loads the plugins described in BusmasterPlugins\*.xml next to BUSMASTER.exe -->
+<BusMasterPlugin>
+  <id>busmaster.plugin.instruments</id>
+  <description>Instruments: gauges, buttons, LEDs, track bars... that show and send signals</description>
+  <dllpath>Instruments.dll</dllpath>
+  <minBusMasterVer>3.5.0</minBusMasterVer>
+  <MenuConfiguration>
+    <Menu>
+      <Title>New</Title>
+      <Category>Instruments</Category>
+      <Group>Instruments</Group>
+      <Id>instruments.new</Id>
+      <BeforeCategory>Tools</BeforeCategory>
+      <LargeIcons>
+        <File>Instruments_New.png</File>
+      </LargeIcons>
+    </Menu>
+    <Menu>
+      <Title>Import</Title>
+      <Category>Instruments</Category>
+      <Group>Instruments</Group>
+      <Id>instruments.import</Id>
+      <BeforeCategory>Tools</BeforeCategory>
+      <LargeIcons>
+        <File>Instruments_Import.png</File>
+      </LargeIcons>
+    </Menu>
+    <Menu>
+      <Title>Close All</Title>
+      <Category>Instruments</Category>
+      <Group>Instruments</Group>
+      <Id>instruments.closeall</Id>
+      <BeforeCategory>Tools</BeforeCategory>
+      <LargeIcons>
+        <File>Instruments_CloseAll.png</File>
+      </LargeIcons>
+    </Menu>
+  </MenuConfiguration>
+</BusMasterPlugin>

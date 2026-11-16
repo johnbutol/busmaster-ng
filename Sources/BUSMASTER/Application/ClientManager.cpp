@@ -15,6 +15,7 @@ bool operator==(const VariableChangeListnerInfo& lhs, const VariableChangeListne
 
 int ClientManager::AddListner(unsigned int canId, unsigned int channel, std::string variableName, VariableChangeListnerInfo listner, IFrame* frame)
 {
+	std::lock_guard<std::recursive_mutex> guard(mLock);
 	bool clientFound = false;
 	for (auto &client : mClientList)
 	{
@@ -39,6 +40,7 @@ int ClientManager::AddListner(unsigned int canId, unsigned int channel, std::str
 }
 int ClientManager::RemoveListner(unsigned int canId, unsigned int channel, std::string variableName, VariableChangeListnerInfo listner)
 {
+	std::lock_guard<std::recursive_mutex> guard(mLock);
 	//Client* reqClient = nullptr;
 	for (auto &client : mClientList)
 	{
@@ -53,11 +55,13 @@ int ClientManager::RemoveListner(unsigned int canId, unsigned int channel, std::
 
 void ClientManager::Clear()
 {
+	std::lock_guard<std::recursive_mutex> guard(mLock);
     mClientList.clear();
 }
 
 void ClientManager::HandleImportInstruments()
 {
+	std::lock_guard<std::recursive_mutex> guard(mLock);
 	for (auto &client : mClientList)
 	{
 		client.HandleImportInstruments();
@@ -79,6 +83,7 @@ void ClientManager::HandleImportInstruments()
 
 int ClientManager::NotifyVariableChange(const STCAN_MSG& canMsg)
 {
+	std::lock_guard<std::recursive_mutex> guard(mLock);
 	for (auto& client : mClientList)
 	{
 		if (client.mCanId == canMsg.m_unMsgID && client.mChannel == canMsg.m_ucChannel-1)
@@ -92,6 +97,7 @@ int ClientManager::NotifyVariableChange(const STCAN_MSG& canMsg)
 
 int ClientManager::NotifyVariableChange(const STLIN_MSG& canMsg)
 {
+	std::lock_guard<std::recursive_mutex> guard(mLock);
 	for (auto& client : mClientList)
 	{
 		if (client.mCanId == canMsg.m_ucMsgID && client.mChannel == canMsg.m_ucChannel - 1

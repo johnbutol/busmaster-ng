@@ -210,10 +210,11 @@ int CANSignalExtractor::setVariableValue(VariableData* value, bool isPhysicalVal
 			if (nullptr != mCanService)
 			{
 				sendMessage(frame, channelIndex, data, 64);
+				return S_OK;
 			}
 		}
 	}
-
+	return S_FALSE;
 }
 int CANSignalExtractor::onMessageRecieved(STCANDATA& canData)
 {
@@ -323,11 +324,13 @@ void CANSignalExtractor::sendMessage(IFrame* frame, unsigned int channel, unsign
 		CANFrameProps props;
 		frame->GetProperties(props);
 
-		STCAN_MSG msg;
-		msg.m_bCANFD = false;	//TODO::
-		msg.m_ucChannel = 1;
-		msg.m_ucDataLen = props.m_unMsgSize;
-		memcpy(msg.m_ucData, data, props.m_unMsgSize);	//TODO::
+		STCAN_MSG msg = {};
+		// BUSMASTER-NG: the channel of the variable (CHANNEL0 is the first one), CAN FD for the frames longer than 8 bytes
+		unsigned int size = std::min<unsigned int>(props.m_unMsgSize, std::min<unsigned int>(dlc, 64));
+		msg.m_bCANFD = size > 8;
+		msg.m_ucChannel = (unsigned char)(channel + 1);
+		msg.m_ucDataLen = (unsigned char)size;
+		memcpy(msg.m_ucData, data, size);
 		msg.m_ucRTR = 0;
 		msg.m_ucEXTENDED = (props.m_canMsgType == eCANMsgType::eCan_Extended);
 		frame->GetFrameId(msg.m_unMsgID);

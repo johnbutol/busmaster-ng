@@ -26,6 +26,7 @@ namespace VariableManager
 		{
 			return mLINSignalExtractor.bIsVariableExists(variablePath);
 		}
+		return false;
 	}
 
 	int VariableLayer::getVariableType(std::string variablePath, unsigned int& unType)
@@ -40,6 +41,7 @@ namespace VariableManager
 		{
 			return mLINSignalExtractor.getVariableType(variablePath, unType);
 		}
+		return S_FALSE;
 	}
 	int VariableLayer::isSignalValueValid(std::string variablePath, double& physical)
 	{
@@ -53,6 +55,7 @@ namespace VariableManager
 		{
 			return mLINSignalExtractor.isSignalValueValid(variablePath, physical);
 		}
+		return S_FALSE;
 	}
 	int VariableLayer::registerVariable(std::string& variablePath, IVariableChangeListner* listner, bool forTx, bool onUpdateOnly)
 	{
@@ -66,6 +69,7 @@ namespace VariableManager
 		{
 			return mLINSignalExtractor.registerVariable(variablePath, listner);
 		}		
+		return S_FALSE;
 	}
     int VariableLayer::UnRegisterVariable(std::string& variablePath, IVariableChangeListner* listner)
 	{
@@ -77,6 +81,7 @@ namespace VariableManager
 		{
 			return mLINSignalExtractor.unRegisterVariable(variablePath, listner);
 		}
+		return S_FALSE;
 	}
 	int VariableLayer::setVariableValue(VariableData* value, bool isPhysicalValue)
 	{
@@ -90,7 +95,8 @@ namespace VariableManager
 			{
 				return mLINSignalExtractor.setVariableValue(value, isPhysicalValue);
 			}
-		}		
+		}
+		return S_FALSE;
 	}
 
 	void VariableLayer::setBusmasterInterface(IBusmasterPluginInterface* bmPluginInterface)

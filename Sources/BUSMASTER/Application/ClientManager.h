@@ -10,6 +10,7 @@
 #include "BusmasterEvents.h"
 #include <concurrent_vector.h>
 #include <concurrent_unordered_map.h>
+#include <mutex>
 using namespace VariableManager;
 
 class VariableChangeListnerInfo
@@ -44,6 +45,8 @@ class ClientManager
 {
 	//Frame - SignalClients
 	Concurrency::concurrent_vector<FrameClient> mClientList;
+	// BUSMASTER-NG: the read thread notifies while the user interface adds and removes listeners
+	std::recursive_mutex mLock;
 public:
 	int AddListner(unsigned int canId, unsigned int channel, std::string variableName, VariableChangeListnerInfo listner, IFrame* frame);
     int RemoveListner(unsigned int canId, unsigned int channel, std::string variableName, VariableChangeListnerInfo listner);

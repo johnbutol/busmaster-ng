@@ -205,10 +205,11 @@ int LINSignalExtractor::setVariableValue(VariableData* value, bool isPhysicalVal
 			if (nullptr != mLINService)
 			{
 				sendMessage(frame, channelIndex, data, 8);
+				return S_OK;
 			}
 		}
 	}
-
+	return S_FALSE;
 }
 int LINSignalExtractor::onMessageRecieved(STLINDATA& canData)
 {
@@ -318,11 +319,12 @@ void LINSignalExtractor::sendMessage(IFrame* frame, unsigned int channel, unsign
 		LinFrameProps props;
 		frame->GetProperties(props);
 
-		STLIN_MSG msg;
-		msg.m_ucChannel = 1;
-		msg.m_ucDataLen = props.m_unMsgSize;
+		STLIN_MSG msg = {};
+		// BUSMASTER-NG: the channel of the variable (CHANNEL0 is the first one)
+		msg.m_ucChannel = (unsigned char)(channel + 1);
+		msg.m_ucDataLen = (unsigned char)std::min<unsigned int>(props.m_unMsgSize, 8);
 		msg.m_ucMsgTyp = 2; // TODO
-		memcpy(msg.m_ucData, data, props.m_unMsgSize);	//TODO::
+		memcpy(msg.m_ucData, data, msg.m_ucDataLen);
 		unsigned int unMsgid = 0;
 		frame->GetFrameId(unMsgid);
 		msg.m_ucMsgID = unMsgid;

@@ -72,6 +72,9 @@ The release notes, change log and read-me of the original BUSMASTER up to v3.2.x
 - The release packages are built on **GitHub Actions** from the tagged sources, the **IXXAT VCI** driver included.
 - The Message window and Signal Watch show the **value descriptions** of CAN signals again
   (`Position control` instead of `3`), lost since BUSMASTER 3.0.
+- **Instruments**: gauges, LEDs, buttons, track bars... drawn in an Instrument Editor and shown in BUSMASTER, where
+  they show signals as they are received and send frames when used (the original had this only as a commercial
+  add-on). See [docs/instruments.md](docs/instruments.md).
 
 ## Known limitations
 

@@ -174,6 +174,9 @@ int BusmasterPluginManager::loadBusPlugins(const char* dir)
 	}
 	if (PathFileExists(pluginPath.c_str()) == TRUE)
 	{
+		// BUSMASTER-NG: the current folder is given back (the configuration files are relative to it)
+		char previousDirectory[MAX_PATH] = "";
+		GetCurrentDirectory(MAX_PATH, previousDirectory);
 		SetCurrentDirectory(pluginPath.c_str());
 
 		CFileFind omFileFinder;
@@ -189,6 +192,7 @@ int BusmasterPluginManager::loadBusPlugins(const char* dir)
 			}
             loadBusPlugin(omFileFinder.GetFilePath());
 		}
+		SetCurrentDirectory(previousDirectory);
 		return S_OK;
 	}
 	return S_FALSE;
@@ -564,22 +568,26 @@ int BusmasterPluginManager::loadPlugins( const char* dir )
     }
     if ( PathFileExists( pluginPath.c_str() ) == TRUE )
     {
+        // BUSMASTER-NG: the current folder is given back (the configuration files are relative to it)
+        char previousDirectory[MAX_PATH] = "";
+        GetCurrentDirectory( MAX_PATH, previousDirectory );
         SetCurrentDirectory( pluginPath.c_str() );
 
         CFileFind omFileFinder;
         CString strWildCard = defPLUGINEXTENSION; //look for the plugin files
 
         BOOL bWorking = omFileFinder.FindFile( strWildCard );
-while (bWorking)
-{
-    bWorking = omFileFinder.FindNextFile();
-    if (omFileFinder.IsDots() || omFileFinder.IsDirectory())
-    {
-        continue;
-    }
-    loadPlugin(omFileFinder.GetFilePath());
-}
-return S_OK;
+        while (bWorking)
+        {
+            bWorking = omFileFinder.FindNextFile();
+            if (omFileFinder.IsDots() || omFileFinder.IsDirectory())
+            {
+                continue;
+            }
+            loadPlugin(omFileFinder.GetFilePath());
+        }
+        SetCurrentDirectory( previousDirectory );
+        return S_OK;
     }
     return S_FALSE;
 }

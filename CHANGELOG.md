@@ -8,6 +8,20 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
 
 ## Unreleased
 
+**Instruments** (new, [docs/instruments.md](docs/instruments.md))
+- A ribbon tab *Instruments*: *New* opens the Instrument Editor, *Import* shows instruments in BUSMASTER,
+  *Close All* closes them. The instruments shown are saved in the configuration.
+- Controls: analog gauge, LED, label, text box, button (momentary, toggle, send), check box, numeric up down, track
+  bar, group box and picture. Each one is associated with a CAN or LIN signal of the databases associated in
+  BUSMASTER; gauges, LEDs and labels show its value as frames are received, the others also send a frame with the
+  new value when they are used.
+- The Instrument Editor: toolbox (drag and drop), several instruments in tabs, property window, signal choice with
+  search, undo / redo, clipboard, alignment, same size, spacing, centering and order of the controls.
+- An example for the Simulation driver in `Examples\Instruments`.
+- The variable layer of BUSMASTER (used by the instruments) sends on the channel of the signal instead of always
+  channel 1, returns its results, and no longer changes its lists while the receiving thread reads them. Loading the
+  plugins no longer leaves the current folder of BUSMASTER in the plugin folder.
+
 ## 3.5.0 "Overdrive" - 2026-11-10
 
 Feature release: a Hardware Selection dialog that is easier to use at high display scale, a baud rate list that

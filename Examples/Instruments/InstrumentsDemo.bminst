@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BusmasterInstrument version="1">
+  <Panel Title="Instruments demo" Width="680" Height="334" BackColor="#F0F0F0"/>
+  <Control Type="GroupBox">
+    <Property Name="Name" Value="Dashboard"/>
+    <Property Name="Left" Value="8"/>
+    <Property Name="Top" Value="8"/>
+    <Property Name="Width" Value="424"/>
+    <Property Name="Height" Value="318"/>
+    <Property Name="Text" Value="Dashboard (received)"/>
+  </Control>
+  <Control Type="GroupBox">
+    <Property Name="Name" Value="Commands"/>
+    <Property Name="Left" Value="440"/>
+    <Property Name="Top" Value="8"/>
+    <Property Name="Width" Value="232"/>
+    <Property Name="Height" Value="318"/>
+    <Property Name="Text" Value="Commands (sent)"/>
+  </Control>
+  <Control Type="AnalogGauge">
+    <Property Name="Name" Value="Speed"/>
+    <Property Name="Left" Value="18"/>
+    <Property Name="Top" Value="30"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="200"/>
+    <Property Name="Text" Value="Speed"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:EngineData:VehicleSpeed"/>
+    <Property Name="Minimum" Value="0"/>
+    <Property Name="Maximum" Value="250"/>
+    <Property Name="MajorStep" Value="50"/>
+    <Property Name="MinorTicks" Value="4"/>
+    <Property Name="LowerRange" Value="130"/>
+    <Property Name="UpperRange" Value="200"/>
+  </Control>
+  <Control Type="AnalogGauge">
+    <Property Name="Name" Value="Rpm"/>
+    <Property Name="Left" Value="222"/>
+    <Property Name="Top" Value="30"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="200"/>
+    <Property Name="Text" Value="Engine"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:EngineData:EngineSpeed"/>
+    <Property Name="Minimum" Value="0"/>
+    <Property Name="Maximum" Value="8000"/>
+    <Property Name="MajorStep" Value="1000"/>
+    <Property Name="MinorTicks" Value="1"/>
+    <Property Name="LowerRange" Value="5000"/>
+    <Property Name="UpperRange" Value="6500"/>
+  </Control>
+  <Control Type="Label">
+    <Property Name="Name" Value="Coolant"/>
+    <Property Name="Left" Value="24"/>
+    <Property Name="Top" Value="240"/>
+    <Property Name="Width" Value="190"/>
+    <Property Name="Height" Value="22"/>
+    <Property Name="Text" Value="Coolant"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:EngineData:CoolantTemp"/>
+    <Property Name="Decimals" Value="0"/>
+  </Control>
+  <Control Type="Label">
+    <Property Name="Name" Value="ThrottleShown"/>
+    <Property Name="Left" Value="228"/>
+    <Property Name="Top" Value="240"/>
+    <Property Name="Width" Value="190"/>
+    <Property Name="Height" Value="22"/>
+    <Property Name="Text" Value="Throttle"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:EngineData:Throttle"/>
+    <Property Name="Decimals" Value="1"/>
+  </Control>
+  <Control Type="Led">
+    <Property Name="Name" Value="HeadLightLed"/>
+    <Property Name="Left" Value="24"/>
+    <Property Name="Top" Value="280"/>
+    <Property Name="Width" Value="130"/>
+    <Property Name="Height" Value="26"/>
+    <Property Name="Text" Value="Head light"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Lights:HeadLight"/>
+    <Property Name="OnColor" Value="#FFD800"/>
+    <Property Name="OffColor" Value="#505040"/>
+  </Control>
+  <Control Type="Led">
+    <Property Name="Name" Value="HazardLed"/>
+    <Property Name="Left" Value="160"/>
+    <Property Name="Top" Value="280"/>
+    <Property Name="Width" Value="130"/>
+    <Property Name="Height" Value="26"/>
+    <Property Name="Text" Value="Hazard"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Lights:Hazard"/>
+    <Property Name="OnColor" Value="#FF8000"/>
+    <Property Name="OffColor" Value="#504030"/>
+  </Control>
+  <Control Type="Led">
+    <Property Name="Name" Value="EngineLed"/>
+    <Property Name="Left" Value="296"/>
+    <Property Name="Top" Value="280"/>
+    <Property Name="Width" Value="130"/>
+    <Property Name="Height" Value="26"/>
+    <Property Name="Text" Value="Engine on"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Control:EngineOn"/>
+  </Control>
+  <Control Type="Button">
+    <Property Name="Name" Value="EngineButton"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="34"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="32"/>
+    <Property Name="Text" Value="Engine on / off"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Control:EngineOn"/>
+    <Property Name="Mode" Value="Toggle"/>
+    <Property Name="PressedValue" Value="1"/>
+    <Property Name="ReleasedValue" Value="0"/>
+  </Control>
+  <Control Type="Label">
+    <Property Name="Name" Value="TargetLabel"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="78"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="20"/>
+    <Property Name="Text" Value="Target speed"/>
+  </Control>
+  <Control Type="TrackBar">
+    <Property Name="Name" Value="TargetSpeed"/>
+    <Property Name="Left" Value="452"/>
+    <Property Name="Top" Value="98"/>
+    <Property Name="Width" Value="208"/>
+    <Property Name="Height" Value="48"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Control:TargetSpeed"/>
+    <Property Name="Minimum" Value="0"/>
+    <Property Name="Maximum" Value="250"/>
+    <Property Name="Step" Value="5"/>
+    <Property Name="TickStep" Value="50"/>
+  </Control>
+  <Control Type="Label">
+    <Property Name="Name" Value="RpmLabel"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="156"/>
+    <Property Name="Width" Value="110"/>
+    <Property Name="Height" Value="22"/>
+    <Property Name="Text" Value="Engine speed"/>
+  </Control>
+  <Control Type="TextBox">
+    <Property Name="Name" Value="RpmBox"/>
+    <Property Name="Left" Value="566"/>
+    <Property Name="Top" Value="156"/>
+    <Property Name="Width" Value="90"/>
+    <Property Name="Height" Value="24"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:EngineData:EngineSpeed"/>
+    <Property Name="Decimals" Value="0"/>
+  </Control>
+  <Control Type="Label">
+    <Property Name="Name" Value="ThrottleLabel"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="190"/>
+    <Property Name="Width" Value="110"/>
+    <Property Name="Height" Value="22"/>
+    <Property Name="Text" Value="Throttle (%)"/>
+  </Control>
+  <Control Type="NumericUpDown">
+    <Property Name="Name" Value="Throttle"/>
+    <Property Name="Left" Value="566"/>
+    <Property Name="Top" Value="190"/>
+    <Property Name="Width" Value="90"/>
+    <Property Name="Height" Value="24"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:EngineData:Throttle"/>
+    <Property Name="Minimum" Value="0"/>
+    <Property Name="Maximum" Value="100"/>
+    <Property Name="Step" Value="5"/>
+  </Control>
+  <Control Type="CheckBox">
+    <Property Name="Name" Value="HeadLight"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="228"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="24"/>
+    <Property Name="Text" Value="Head light"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Lights:HeadLight"/>
+  </Control>
+  <Control Type="CheckBox">
+    <Property Name="Name" Value="Hazard"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="256"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="24"/>
+    <Property Name="Text" Value="Hazard"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Lights:Hazard"/>
+  </Control>
+  <Control Type="Button">
+    <Property Name="Name" Value="Horn"/>
+    <Property Name="Left" Value="456"/>
+    <Property Name="Top" Value="288"/>
+    <Property Name="Width" Value="200"/>
+    <Property Name="Height" Value="28"/>
+    <Property Name="Text" Value="Hazard while held"/>
+    <Property Name="Variable" Value="SIGNAL:CAN:CHANNEL0:InstrumentsDemodbf:Lights:Hazard"/>
+    <Property Name="Mode" Value="Momentary"/>
+    <Property Name="PressedValue" Value="1"/>
+    <Property Name="ReleasedValue" Value="0"/>
+  </Control>
+</BusmasterInstrument>
