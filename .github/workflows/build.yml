@@ -1,0 +1,125 @@
+# Builds BUSMASTER-NG for every pull request and for every push to master, so that a change that does not compile shows
+# up as a red cross on the pull request. Same build as the release (Windows 7 build, toolset 14.38, see README "Windows 7
+# build"), without the packages: no MinGW, no Inno Setup, no installer, no signing.
+# Pull requests from forks run with a read-only token and without secrets; the first one of a new contributor waits for
+# the approval of the maintainer ("Approve and run workflows" on the pull request).
+name: Build
+
+on:
+  pull_request:
+    paths-ignore: ["**.md", "site/**", "docs/**", ".github/ISSUE_TEMPLATE/**", ".github/pull_request_template.md"]
+  push:
+    branches: [master]
+    paths-ignore: ["**.md", "site/**", "docs/**", ".github/ISSUE_TEMPLATE/**", ".github/pull_request_template.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# a new push to the same pull request stops the build of the previous one
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Ixxat VCI V4 driver package of HMS (README "Known build notes"): CAN_IXXAT_VCI needs the headers of its SDK.
+  # Keep this link equal to the one in release.yml; HMS changes it with every VCI version.
+  IXXAT_VCI_URL: https://hmsnetworks.blob.core.windows.net/nlw/docs/default-source/products/ixxat/monitored/pc-interface-cards/vci-v4-0-1374-windows-11-10.zip?sfvrsn=2d1dfdd7_92
+  IXXAT_VCI_INC: C:\Program Files\HMS\Ixxat VCI\sdk\vci\inc
+  MSBUILD_ARGS: /p:Configuration=Release /p:Platform=Win32 /p:BusmasterWin7=true /m /nologo /v:minimal
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: MSVC 14.38 toolset with MFC and ATL
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $p = Start-Process "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" -Wait -PassThru -ArgumentList @(
+            "modify", "--installPath", "`"$vs`"", "--quiet", "--norestart", "--nocache",
+            "--add", "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
+            "--add", "Microsoft.VisualStudio.Component.VC.14.38.17.8.MFC",
+            "--add", "Microsoft.VisualStudio.Component.VC.14.38.17.8.ATL")
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Visual Studio installer failed ($($p.ExitCode))" }
+          if (-not (Test-Path "$vs\VC\Redist\MSVC\14.38.33130\x86\Microsoft.VC143.MFC")) { throw "14.38 runtime not installed" }
+          "MSBUILD=" + (& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1) >> $env:GITHUB_ENV
+
+      # only the headers are needed (the driver loads vcinpl.dll at run time), in the folder the project expects
+      - name: Cache Ixxat VCI SDK headers
+        id: ixxat-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.IXXAT_VCI_INC }}
+          key: ixxat-vci-inc-${{ env.IXXAT_VCI_URL }}
+
+      - name: Ixxat VCI SDK
+        if: steps.ixxat-cache.outputs.cache-hit != 'true'
+        run: |
+          Invoke-WebRequest $env:IXXAT_VCI_URL -OutFile "$env:RUNNER_TEMP\ixxat.zip"
+          Expand-Archive "$env:RUNNER_TEMP\ixxat.zip" "$env:RUNNER_TEMP\ixxat"
+          $setup = Get-ChildItem "$env:RUNNER_TEMP\ixxat" -Recurse -Filter "Ixxat VCI Setup *.exe" | Select-Object -First 1
+          if ($null -eq $setup) { throw "Ixxat VCI Setup not found in the package" }
+          $sig = Get-AuthenticodeSignature $setup.FullName
+          "$($setup.Name): $($sig.Status), $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne "Valid" -or $sig.SignerCertificate.Subject -notmatch "HMS") { throw "$($setup.Name): bad signature" }
+          # only the SDK, no drivers; if the setup does not end after copying its files, stop it once the headers are
+          # there and the log has been quiet for a minute
+          $log = "$env:RUNNER_TEMP\ixxat-setup.log"
+          $p = Start-Process $setup.FullName -PassThru -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
+            "/TYPE=custom", "/COMPONENTS=`"core,sdk,sdk\vci,sdk\npl`"", "/LOG=`"$log`""
+          $deadline = (Get-Date).AddMinutes(15)
+          while (-not $p.HasExited -and (Get-Date) -lt $deadline) {
+            Start-Sleep 10
+            $quiet = (Test-Path $log) -and ((Get-Date) - (Get-Item $log).LastWriteTime).TotalSeconds -gt 60
+            if ($quiet -and (Test-Path "$env:IXXAT_VCI_INC\vcinpl.h")) { "Setup quiet for a minute: stopping it"; taskkill /T /F /PID $p.Id; break }
+          }
+          Get-Content $log -Tail 5
+          foreach ($h in "vcinpl.h", "vcisdk.h", "vcitype.h", "vciver.h", "vcierr.h", "cantype.h", "lintype.h", "baltype.h", "stdtype.h") {
+            if (-not (Test-Path "$env:IXXAT_VCI_INC\$h")) { throw "$h not found in $env:IXXAT_VCI_INC" }
+          }
+
+      - name: Build Kernel
+        run: |
+          & $env:MSBUILD Sources\Kernel\BusmasterKernel.sln $env:MSBUILD_ARGS.Split(" ")
+          if ($LASTEXITCODE -ne 0) { throw "Kernel build failed" }
+
+      - name: Build BUSMASTER
+        run: |
+          & $env:MSBUILD Sources\BUSMASTER\BUSMASTER.sln $env:MSBUILD_ARGS.Split(" ")
+          "BUSMASTER.sln exit code $LASTEXITCODE"
+          # projects the solution may skip after a failure (README "Windows 7 build")
+          $sln = (Resolve-Path Sources\BUSMASTER).Path + "\"
+          foreach ($proj in @(@("Application\BUSMASTER.vcxproj", "BUSMASTER.exe"), @("CAN_STUB\CAN_STUB.vcxproj", "CAN_STUB.dll"))) {
+            if (-not (Test-Path "Sources\BUSMASTER\BIN\Release\$($proj[1])")) {
+              & $env:MSBUILD "Sources\BUSMASTER\$($proj[0])" $env:MSBUILD_ARGS.Split(" ") /p:BuildProjectReferences=false "/p:SolutionDir=$sln"
+              if ($LASTEXITCODE -ne 0) { throw "$($proj[0]) build failed" }
+            }
+          }
+          # the drivers built from this repository must be there
+          foreach ($dll in "CAN_IXXAT_VCI.dll", "CAN_PEAK_PCANBasic.dll", "CAN_STUB.dll") {
+            if (-not (Test-Path "Sources\BUSMASTER\BIN\Release\$dll")) { throw "$dll was not built" }
+          }
+          exit 0
+
+      - name: Build language DLLs and Format Converter
+        run: |
+          # CAN_PEAK_USBJPN needs the PEAK driver sources, which are not in the repository: it fails and the rest goes on
+          & $env:MSBUILD "Sources\BUSMASTER\Language Dlls\Language Dlls.sln" $env:MSBUILD_ARGS.Split(" ")
+          "Language Dlls.sln exit code $LASTEXITCODE (CAN_PEAK_USBJPN is expected to fail)"
+          if (-not (Test-Path Sources\BUSMASTER\BIN\Release\JPN\BUSMASTERJPN.dll)) { throw "Language DLLs build failed" }
+          $fc = "Sources\BUSMASTER\Format Converter"
+          foreach ($c in @(@("AscLogConverter", "Asc_Log"), @("LogAscConverter", "Log_Asc"))) {
+            $d = "$fc\$($c[0])\$($c[1])"
+            & Tools\flex\flex.exe -i -L "-o$d`_Lexer.c" "$d`_Lexer.l"
+            Push-Location Tools\bison
+            & .\bison.exe -d -l "-o..\..\$d`_Parser.c" "..\..\$d`_Parser.y"
+            Pop-Location
+          }
+          & $env:MSBUILD "$fc\FormatConverter.sln" $env:MSBUILD_ARGS.Split(" ")
+          if ($LASTEXITCODE -ne 0) { throw "Format Converter build failed" }
