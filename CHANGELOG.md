@@ -13,6 +13,11 @@ The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/his
   driver, because these three names were not recognised when it was loaded. It now opens with its own driver.
 
 **Drivers**
+- IXXAT VCI: the driver works with the VCI V4 driver of IXXAT / HMS. It refused it with "Driver selection failed. The
+  file CAN_IXXAT_VCI.dll loads, but the driver could not be started ...", because it accepted only version 3 of the
+  VCI library, and V4 reports version 4 (#16, reported by robomaniac; the same fix as in pull request 1189 of IXXAT for
+  the original project) *(not tested with an IXXAT interface; the version check is tested against the installed VCI
+  V4 driver)*.
 - IXXAT VCI: the time stamps of the messages ran slow by up to some percent, because the length of a timer tick was
   cut to whole nanoseconds (27 instead of 27.78 ns with a 36 MHz clock); the error grew with the time since connect.
   The time is now computed without rounding (from original pull request 1189) *(not tested with an IXXAT interface)*.

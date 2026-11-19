@@ -27,8 +27,10 @@
     lProcAddr &= DYNFUNC(FUNC)!= nullptr?1:0;
 #define UNLOAD_FUNCTION_POINTER(FUNC)   DYNFUNC(FUNC) = nullptr;
 
-//*** Expected Major Version Number
+//*** Expected Major Version Numbers: the VCI V4 driver still has the V3 API in vcinpl.dll
+//    (the fix of IXXAT for pull request 1189 of the original project)
 #define VCI_V3_NPL_MAJOR_VERION 3
+#define VCI_V4_NPL_MAJOR_VERION 4
 
 //*** VCI V3 NPL DLL Name
 const TCHAR k_tszVciV3NplDllName[] = TEXT("vcinpl.dll");
@@ -206,7 +208,8 @@ HRESULT LoadVciNplLib(void)
                                                  &dwMinorVersion);
             if(hResult == S_OK)
             {
-                if(dwMajorVersion != VCI_V3_NPL_MAJOR_VERION)
+                if(dwMajorVersion != VCI_V3_NPL_MAJOR_VERION &&
+                        dwMajorVersion != VCI_V4_NPL_MAJOR_VERION)
                 {
                     hResult = ERROR_BAD_ENVIRONMENT;
                 }
