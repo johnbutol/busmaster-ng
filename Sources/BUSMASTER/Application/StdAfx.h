@@ -82,10 +82,10 @@ const float PI = (float) 3.14159265358979323846;
 #include "afxribbonbar.h"
 
 #include <afxcontrolbars.h>     // Added to support for ribbons and control bars
-//3.7.5
+//3.7.6
 const BYTE VERSION_MAJOR=3;
 const BYTE VERSION_MINOR=7;
-const BYTE VERSION_BUILD=5;
+const BYTE VERSION_BUILD=6;
 
 // BUSMASTER-NG: the application is system DPI aware, so sizes given in pixels for 96 dpi must be scaled.
 inline int nScaleToScreenDpi(int nPixels)

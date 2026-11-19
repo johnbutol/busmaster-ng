@@ -6,7 +6,7 @@
 [![Last commit](https://img.shields.io/github/last-commit/teoCLMR/busmaster-ng)](https://github.com/teoCLMR/busmaster-ng/commits/master)
 [![Issues](https://img.shields.io/github/issues/teoCLMR/busmaster-ng)](https://github.com/teoCLMR/busmaster-ng/issues)
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4)
-![Version 3.7.5](https://img.shields.io/badge/version-3.7.5-2ecca0)
+![Version 3.7.6](https://img.shields.io/badge/version-3.7.6-2ecca0)
 ![Built with Visual Studio 2022](https://img.shields.io/badge/built%20with-Visual%20Studio%202022-5C2D91)
 ![Buses: CAN, LIN](https://img.shields.io/badge/buses-CAN%20%C2%B7%20LIN-0a5c5e)
 

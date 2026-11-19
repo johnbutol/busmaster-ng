@@ -6,7 +6,14 @@ All user-visible changes of BUSMASTER-NG, newest first. Numbers like #2 are issu
 
 The history of the original BUSMASTER up to v3.2.x is in [docs/history](docs/history) (ETAS, not changed).
 
-## Unreleased
+## 3.7.6 "Overdrive" - 2026-11-19
+
+Bug fix release: IXXAT interfaces with the VCI V4 driver, IXXAT time stamps, and configurations of three drivers that
+opened with the Simulation driver.
+
+**Note on updating**
+- Window positions and the last configuration are stored per version, so after updating from 3.7.5 load your
+  configuration once (*File → Load*).
 
 **Configuration**
 - A configuration saved with the *VScom CAN-API*, *i-VIEW* or *ETAS ISOLAR-EVE* driver opened with the Simulation
